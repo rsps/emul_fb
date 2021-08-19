@@ -18,8 +18,8 @@
  */
 #define FUSE_USE_VERSION 30
 #define _FILE_OFFSET_BITS 64
-#include <fuse/cuse_lowlevel.h>
-#include <fuse/fuse_opt.h>
+#include <fuse3/cuse_lowlevel.h>
+#include <fuse3/fuse_opt.h>
 
 #include <linux/fb.h>
 
@@ -27,12 +27,18 @@
 #include <iostream>
 #include <cstring>
 #include <system_error>
+#include <stdexcept>
 
 #include "FramebufferDevice.h"
+#include "Epoll.h"
+#include "log.h"
+
+static size_t write_offset = 0;
 
 static void open(fuse_req_t req, struct fuse_file_info *fi)
 {
     LOG("open");
+    write_offset = 0;
     fuse_reply_open(req, fi);
 }
 
@@ -44,8 +50,17 @@ static void read(fuse_req_t req, size_t size, off_t off, struct fuse_file_info *
 
 static void write(fuse_req_t req, const char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
-    LOG("write (%zu bytes)", size);
-    fuse_reply_write(req, size);
+    LOG("write ", size, " bytes @ offset ", static_cast<uint32_t>(off));
+
+    uint32_t written = FramebufferDevice::Get().GetView().Write(
+        reinterpret_cast<const uint32_t*>(buf),
+        static_cast<uint32_t>(size) / sizeof(uint32_t),
+        (static_cast<uint32_t>(off) + write_offset) / sizeof(uint32_t));
+
+    written *= sizeof(uint32_t);
+    write_offset += written;
+
+    fuse_reply_write(req, written);
 }
 
 static void ioctl(fuse_req_t req, int cmd, void *arg, struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz, size_t out_bufsz)
@@ -57,7 +72,6 @@ static void ioctl(fuse_req_t req, int cmd, void *arg, struct fuse_file_info *fi,
             if (in_bufsz == 0) {
                 struct iovec iov = { arg, sizeof(FramebufferDevice::Get().mFbFix) };
                 fuse_reply_ioctl_retry(req, &iov, 1, &iov, 1);
-
             }
             else {
                 fuse_reply_ioctl(req, 0, &FramebufferDevice::Get().mFbFix, sizeof(FramebufferDevice::Get().mFbFix));
@@ -74,13 +88,24 @@ static void ioctl(fuse_req_t req, int cmd, void *arg, struct fuse_file_info *fi,
             }
             break;
 
+        case FBIOPUT_VSCREENINFO:
+            if (in_bufsz != sizeof(FramebufferDevice::Get().mFbVar)) {
+                struct iovec iov = { arg, sizeof(FramebufferDevice::Get().mFbVar) };
+                fuse_reply_ioctl_retry(req, &iov, 1, &iov, 1);
+            }
+            else {
+                FramebufferDevice::Get().SetVScreenInfo(in_buf, in_bufsz);
+                fuse_reply_ioctl(req, 0, nullptr, 0);
+            }
+            break;
+
         case 23:
             if (in_bufsz == 0) {
                 struct iovec iov = { arg, sizeof(int) };
                 fuse_reply_ioctl_retry(req, &iov, 1, NULL, 0);
             }
             else {
-                LOG("  got value: %d", *((int*)in_buf));
+                LOG("  got value: ", *(reinterpret_cast<const int*>(in_buf)));
                 fuse_reply_ioctl(req, 0, NULL, 0);
             }
             break;
@@ -96,6 +121,9 @@ static void ioctl(fuse_req_t req, int cmd, void *arg, struct fuse_file_info *fi,
                 fuse_reply_ioctl(req, 0, &v, sizeof(int));
             }
             break;
+
+        default:
+            break;
     }
 }
 
@@ -109,7 +137,7 @@ static const struct cuse_lowlevel_ops cuse_clop = {
 
 FramebufferDevice& FramebufferDevice::Get()
 {
-    FramebufferDevice *instance = nullptr;
+    static FramebufferDevice *instance = nullptr;
 
     if (!instance) {
         instance = new FramebufferDevice();
@@ -119,15 +147,16 @@ FramebufferDevice& FramebufferDevice::Get()
 }
 
 FramebufferDevice::FramebufferDevice()
-    : mFbView(480, 800)
 {
+    mpFbView = new FramebufferViewSDL(480, 800);
+
     memset(&mFbFix, 0, sizeof(mFbFix));
     strcpy(mFbFix.id, "emul_fb");
-    mFbFix.line_length = sizeof(uint32_t) * mFbView.GetWidth();
+    mFbFix.line_length = sizeof(uint32_t) * GetView().GetWidth();
 
     memset(&mFbVar, 0, sizeof(mFbVar));
-    mFbVar.xres_virtual = mFbView.GetWidth();
-    mFbVar.yres_virtual = mFbView.GetHeight();
+    mFbVar.xres_virtual = GetView().GetWidth();
+    mFbVar.yres_virtual = GetView().GetHeight();
     mFbVar.bits_per_pixel = sizeof(uint32_t);
 }
 
@@ -137,7 +166,7 @@ FramebufferDevice::~FramebufferDevice()
 
 void FramebufferDevice::run(const std::string aDevName)
 {
-    const char *cusearg[] = { "test", "-f", "-d" }; // -d for debug -s for single thread
+    const char *cusearg[] = { "test", "-f", "-d", "-s" }; // -d for debug -s for single thread
     std::string dev_name = "DEVNAME=" + aDevName;
     const char *devarg[] = { dev_name.data() };
     struct cuse_info ci;
@@ -147,11 +176,85 @@ void FramebufferDevice::run(const std::string aDevName)
     ci.dev_info_argc = 1;
     ci.dev_info_argv = devarg;
 
-    mFbView.Render();
+    GetView().Render();
 
-    if (cuse_lowlevel_main(3, (char**)&cusearg, &ci, &cuse_clop, NULL) != 0) {
-        throw std::system_error(errno, std::generic_category(), "cuse failed");
+    struct fuse_session *se;
+    int multithreaded;
+    int res;
+
+    se = cuse_lowlevel_setup(4, const_cast<char**>(cusearg), &ci, &cuse_clop, &multithreaded, nullptr);
+    if (se == nullptr) {
+        throw std::system_error(errno, std::generic_category(), "cuse_lowlevel_setup failed");
+    }
+
+    try {
+        if (multithreaded) {
+            throw std::runtime_error("cuse_lowlevel_setup MUST NOT be multithreaded");
+        }
+        else {
+            mpFuseSession = se;
+            SessionLoop();
+        }
+        cuse_lowlevel_teardown(se);
+    }
+    catch (const std::exception &e) {
+        cuse_lowlevel_teardown(se);
+        throw;
     }
 }
 
+void FramebufferDevice::SetVScreenInfo(const void *in_buf, size_t in_bufsz)
+{
+    if (mpFbView) {
+        delete mpFbView;
+    }
+
+    memcpy(&mFbVar, in_buf, in_bufsz);
+
+    mpFbView = new FramebufferViewSDL(mFbVar.xres_virtual, mFbVar.yres_virtual);
+}
+
+void FramebufferDevice::SessionLoop()
+{
+    struct fuse_session *se = static_cast<struct fuse_session *>(mpFuseSession);
+
+    int res = 0;
+    struct fuse_buf fbuf = {
+        .mem = NULL,
+    };
+
+    const int cMAX_EVENTS = 5;
+    struct epoll_event events[cMAX_EVENTS];
+
+    Epoll ep;
+    ep.Add(fuse_session_fd(se), EPOLLIN);
+
+    while (!fuse_session_exited(se)) {
+
+        int counts = ep.Wait(events, cMAX_EVENTS, 10);
+        if (counts > 0) {
+            res = fuse_session_receive_buf(se, &fbuf);
+
+            if (res == -EINTR)
+                continue;
+            if (res <= 0)
+                break;
+
+            fuse_session_process_buf(se, &fbuf);
+
+            mpFbView->Render();
+        }
+
+        if (!mpFbView->PollEvents()) {
+            fuse_session_exit(se);
+        }
+    }
+
+    free(fbuf.mem);
+    fuse_session_reset(se);
+
+    if (res < 0) {
+        throw std::system_error(res, std::generic_category(), "fuse_session_receive_buf failed");
+    }
+}
 

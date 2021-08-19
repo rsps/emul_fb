@@ -20,15 +20,8 @@
 #ifndef FRAMEBUFFERDEVICE_H_
 #define FRAMEBUFFERDEVICE_H_
 
-#include <iostream>
 #include <linux/fb.h>
-#include "FramebufferView.h"
-
-template< typename ...Args >
-void LOG(Args &&...args)
-{
-    (std::cerr << ... << args);
-}
+#include "FramebufferViewSDL.h"
 
 class FramebufferDevice
 {
@@ -38,15 +31,21 @@ public:
 
     static FramebufferDevice& Get();
 
+    void SetVScreenInfo(const void *in_buf, size_t in_bufsz);
+
+    FramebufferViewSDL& GetView() { return *mpFbView; }
+
     void run(const std::string aDevName);
 
 protected:
-    FramebufferView mFbView;
+    FramebufferViewSDL* mpFbView;
+    void* mpFuseSession = nullptr;
 
     FramebufferDevice();
+    FramebufferDevice(const FramebufferDevice&) = delete;
     virtual ~FramebufferDevice();
 
-    FramebufferDevice(const FramebufferDevice&) = delete;
+    void SessionLoop();
 };
 
 #endif /* FRAMEBUFFERDEVICE_H_ */

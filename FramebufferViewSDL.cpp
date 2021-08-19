@@ -20,14 +20,17 @@
 #include <SDL2pp/SDL2pp.hh>
 #include <SDL2/SDL.h>
 #include <cstring>
-#include "FramebufferView.h"
+#include <algorithm>
+#include "FramebufferViewSDL.h"
+#include "log.h"
 
 using namespace SDL2pp;
 
-FramebufferView::FramebufferView(int aHeight, int aWidth)
+FramebufferViewSDL::FramebufferViewSDL(int aWidth, int aHeight)
 {
     mHeight = aHeight;
     mWidth = aWidth;
+
     mpBuffer = new uint32_t[aHeight * aWidth];
 
     mpSdl = new SDL(SDL_INIT_VIDEO);
@@ -35,7 +38,7 @@ FramebufferView::FramebufferView(int aHeight, int aWidth)
     mpWindow = new Window("Framebuffer Emulator",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             mWidth, mHeight,
-            SDL_WINDOW_SKIP_TASKBAR | SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_BORDERLESS);
+            SDL_WINDOW_SKIP_TASKBAR);
 
     // Create accelerated video renderer with default driver
     mpRenderer = new Renderer(*mpWindow, -1, SDL_RENDERER_ACCELERATED);
@@ -43,7 +46,7 @@ FramebufferView::FramebufferView(int aHeight, int aWidth)
     mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, mWidth, mHeight);
 }
 
-FramebufferView::~FramebufferView()
+FramebufferViewSDL::~FramebufferViewSDL()
 {
     delete mpTexture;
     delete mpRenderer;
@@ -52,14 +55,19 @@ FramebufferView::~FramebufferView()
     delete mpBuffer;
 }
 
-void FramebufferView::Render()
+/**
+ * \fn void Render()
+ * \brief Render the entire buffer contents in the window
+ *
+ */
+void FramebufferViewSDL::Render()
 {
     {
         auto lock = mpTexture->Lock();
         uint32_t* pixels = static_cast<uint32_t*>(lock.GetPixels());
-        std::memcpy(pixels, mpBuffer, mHeight * mWidth);
+        std::memcpy(pixels, mpBuffer, mHeight * mWidth * sizeof(uint32_t));
     }
-    mpRenderer->Clear();
+//    mpRenderer->Clear();
     mpRenderer->Copy(*mpTexture);
     mpRenderer->Present();
 }
@@ -67,9 +75,9 @@ void FramebufferView::Render()
 /**
  * Function to check for pending events.
  *
- * @return false if termination is requested.
+ * \return false if termination is requested.
  */
-bool FramebufferView::PollEvents()
+bool FramebufferViewSDL::PollEvents()
 {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -80,8 +88,34 @@ bool FramebufferView::PollEvents()
                 case SDLK_ESCAPE:
                 case SDLK_q:
                     return false;
+                default:
+                    break;
             }
         }
     }
     return true;
+}
+
+/**
+ * \fn uint32_t Write(const uint32_t*, uint32_t, uint32_t)
+ * \brief Write raw pixel data into the buffer.
+ *
+ * \param aData Pointer to incoming pixel data
+ * \param aSize Number of pixels
+ * \param aOffset Offset into destination buffer in pixels.
+ * \return Number of pixels written to buffer.
+ */
+uint32_t FramebufferViewSDL::Write(const uint32_t *aData, uint32_t aSize, uint32_t aOffset)
+{
+    if (aOffset > (mHeight * mWidth)) {
+        return 0;
+    }
+
+    uint32_t written = std::min(aSize, (mHeight * mWidth) - aOffset);
+
+    std::memcpy(&mpBuffer[aOffset], aData, written * sizeof(uint32_t));
+
+    LOG("FramebufferViewSDL::Write(", aSize, ", ", aOffset, ") -> ", written);
+
+    return written;
 }

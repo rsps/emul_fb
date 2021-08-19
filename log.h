@@ -1,5 +1,5 @@
 /*
- * emul_fb.cpp
+ * log.h
  *
  * Copyright (C) 2021 RSP Systems <software@rspsystems.com>
  *
@@ -17,21 +17,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef LOG_H_
+#define LOG_H_
+
 #include <iostream>
-#include "FramebufferDevice.h"
 
-
-int main(int argc, char **argv)
+template< typename ...Args >
+void LOG(Args &&...args)
 {
-    std::cout << "Framebuffer Emulator ver. 0.1.0" << std::endl;
-
-    try {
-        FramebufferDevice::Get().run("fb_emulator");
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
-
-    std::cout << "Done" << std::endl;
-    return 0;
+    (std::cerr << ... << args) << std::endl;
 }
+
+
+#endif /* LOG_H_ */

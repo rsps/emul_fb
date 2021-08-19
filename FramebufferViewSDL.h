@@ -16,26 +16,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef FRAMEBUFFERVIEW_H_
-#define FRAMEBUFFERVIEW_H_
+#ifndef FRAMEBUFFERVIEWSDL_H_
+#define FRAMEBUFFERVIEWSDL_H_
 
 #include <SDL2pp/SDL2pp.hh>
 
 
-class FramebufferView
+class FramebufferViewSDL
 {
 public:
-    FramebufferView(int aHeight, int aWidth);
-    virtual ~FramebufferView();
+    FramebufferViewSDL(int aWidth, int aHeight);
+    virtual ~FramebufferViewSDL();
 
     void Render();
     bool PollEvents();
 
-    int GetHeight() { return mHeight; }
-    int GetWidth()  { return mWidth; }
+    uint32_t GetHeight() { return mHeight; }
+    uint32_t GetWidth()  { return mWidth; }
 
     uint32_t GetPixel(int aX, int aY) { return mpBuffer[(aY * mWidth) + aX]; }
     void SetPixel(int aX, int aY, uint32_t aValue) { mpBuffer[(aY * mWidth) + aX] = aValue; }
+
+    uint32_t Write(const uint32_t* aData, uint32_t aSize, uint32_t aOffset);
 
 protected:
     SDL2pp::SDL *mpSdl;
@@ -43,10 +45,10 @@ protected:
     SDL2pp::Renderer *mpRenderer;
     SDL2pp::Texture *mpTexture;
 
-    int mHeight;
-    int mWidth;
+    uint32_t mHeight;
+    uint32_t mWidth;
 
     uint32_t* mpBuffer;
 };
 
-#endif /* FRAMEBUFFERVIEW_H_ */
+#endif /* FRAMEBUFFERVIEWSDL_H_ */

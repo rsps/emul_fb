@@ -1,5 +1,5 @@
 /*
- * emul_fb.cpp
+ * Epoll.h
  *
  * Copyright (C) 2021 RSP Systems <software@rspsystems.com>
  *
@@ -17,21 +17,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include "FramebufferDevice.h"
+#ifndef EPOLL_H_
+#define EPOLL_H_
 
+#include <sys/epoll.h>
 
-int main(int argc, char **argv)
+class Epoll
 {
-    std::cout << "Framebuffer Emulator ver. 0.1.0" << std::endl;
+public:
+    Epoll();
+    virtual ~Epoll();
 
-    try {
-        FramebufferDevice::Get().run("fb_emulator");
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
+    void Add(int aFd, enum EPOLL_EVENTS aEpollEvents);
+    void Del(int aFd);
+    int Wait(struct epoll_event *aEvents, int aMaxEvents, int aTimeoutMilliSeconds);
 
-    std::cout << "Done" << std::endl;
-    return 0;
-}
+protected:
+    int mFd;
+};
+
+#endif /* EPOLL_H_ */
