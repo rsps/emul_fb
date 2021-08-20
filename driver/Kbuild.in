@@ -1,0 +1,2 @@
+obj-m := mymodule.o
+mymodule-objs := $(pathsubst %.c,%.o, $(filter %.c, @module_sources_string@))
