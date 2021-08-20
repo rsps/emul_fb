@@ -17,7 +17,7 @@ FetchContent_GetProperties(libSDL2pp)
 if(NOT libSDL2pp_POPULATED)
     FetchContent_Populate(libSDL2pp)
 
-    SET(SDL2PP_WITH_IMAGE ON) # if you need SDL_image support
+    SET(SDL2PP_WITH_IMAGE OFF) # if you need SDL_image support
     SET(SDL2PP_WITH_MIXER OFF) # if you need SDL_mixer support
     SET(SDL2PP_WITH_TTF OFF) # if you need SDL_ttf support
     add_subdirectory(${libsdl2pp_SOURCE_DIR} ${libsdl2pp_BINARY_DIR})
@@ -35,3 +35,16 @@ INCLUDE_DIRECTORIES(${SDL2PP_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
 add_executable(emul_fb emul_fb.cpp Epoll.cpp FramebufferViewSDL.cpp FramebufferDevice.cpp)
 
 target_link_libraries(emul_fb ${LIBFUSE} ${SDL2PP_LIBRARIES} ${SDL2_LIBRARIES})
+
+
+include(GNUInstallDirs)
+
+set(PROGRAM_PERMISSIONS_DEFAULT
+    OWNER_WRITE OWNER_READ OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE
+    WORLD_READ WORLD_EXECUTE)
+
+install(TARGETS emul_fb
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID
+)

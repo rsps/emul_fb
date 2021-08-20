@@ -22,6 +22,9 @@
 #include <fuse3/fuse_opt.h>
 
 #include <linux/fb.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <grp.h>
 
 #include <string>
 #include <iostream>
@@ -34,6 +37,31 @@
 #include "log.h"
 
 static size_t write_offset = 0;
+
+static void drop_privileges()
+{
+    gid_t newgid = getgid();
+    uid_t newuid = getuid();
+
+    LOG("Dropping privileges. GID:", newgid, ", UID:", newuid);
+
+  /* If root privileges are to be dropped, be sure to pare down the ancillary
+   * groups for the process before doing anything else because the setgroups(  )
+   * system call requires root privileges.  Drop ancillary groups regardless of
+   * whether privileges are being dropped temporarily or permanently.
+   */
+    setgroups(1, &newgid);
+
+    int res = setregid(newgid, newgid);
+    if (res == -1) {
+        throw std::system_error(errno, std::generic_category(), "setregid failed");
+    }
+
+    res = setreuid(newuid, newuid);
+    if (res == -1) {
+        throw std::system_error(errno, std::generic_category(), "setreuid failed");
+    }
+}
 
 static void open(fuse_req_t req, struct fuse_file_info *fi)
 {
@@ -171,6 +199,8 @@ void FramebufferDevice::run(const std::string aDevName)
     const char *devarg[] = { dev_name.data() };
     struct cuse_info ci;
 
+    mDeviceName = "/dev/" + aDevName;
+
     memset(&ci, 0x00, sizeof(ci));
     ci.flags = CUSE_UNRESTRICTED_IOCTL;
     ci.dev_info_argc = 1;
@@ -180,7 +210,6 @@ void FramebufferDevice::run(const std::string aDevName)
 
     struct fuse_session *se;
     int multithreaded;
-    int res;
 
     se = cuse_lowlevel_setup(4, const_cast<char**>(cusearg), &ci, &cuse_clop, &multithreaded, nullptr);
     if (se == nullptr) {
@@ -217,6 +246,7 @@ void FramebufferDevice::SetVScreenInfo(const void *in_buf, size_t in_bufsz)
 void FramebufferDevice::SessionLoop()
 {
     struct fuse_session *se = static_cast<struct fuse_session *>(mpFuseSession);
+    bool first_run = true;
 
     int res = 0;
     struct fuse_buf fbuf = {
@@ -234,13 +264,22 @@ void FramebufferDevice::SessionLoop()
         int counts = ep.Wait(events, cMAX_EVENTS, 10);
         if (counts > 0) {
             res = fuse_session_receive_buf(se, &fbuf);
-
             if (res == -EINTR)
                 continue;
             if (res <= 0)
                 break;
 
             fuse_session_process_buf(se, &fbuf);
+
+            if (first_run) {
+                first_run = false;
+                int res = chmod(mDeviceName.c_str(), 0666);
+                if (res < 0) {
+                    throw std::system_error(errno, std::generic_category(), "chmod failed");
+                }
+
+                drop_privileges();
+            }
 
             mpFbView->Render();
         }

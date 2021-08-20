@@ -23,7 +23,7 @@
 
 int main(int argc, char **argv)
 {
-    std::cout << "Framebuffer Emulator ver. 0.1.0" << std::endl;
+    std::cout << "Framebuffer Emulator ver. 0.2.0" << std::endl;
 
     try {
         FramebufferDevice::Get().run("fb_emulator");

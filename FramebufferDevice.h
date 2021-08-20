@@ -40,6 +40,7 @@ public:
 protected:
     FramebufferViewSDL* mpFbView;
     void* mpFuseSession = nullptr;
+    std::string mDeviceName;
 
     FramebufferDevice();
     FramebufferDevice(const FramebufferDevice&) = delete;
