@@ -4,6 +4,8 @@ project (emul_fb)
 
 set(CMAKE_VERBOSE_MAKEFILE on)
 
+add_subdirectory(driver)
+
 include(FetchContent)
 find_package(Git REQUIRED)
 

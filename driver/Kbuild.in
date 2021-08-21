@@ -1,2 +1,2 @@
-obj-m := mymodule.o
-mymodule-objs := $(pathsubst %.c,%.o, $(filter %.c, @module_sources_string@))
+obj-m := vfb2.o
+vfb2-objs := $(pathsubst %.c,%.o, $(filter %.c, @module_sources_string@))

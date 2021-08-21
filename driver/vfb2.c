@@ -1,11 +1,4 @@
 /*
- * vfb2.c
- *
- *  Created on: Aug 20, 2021
- *      Author: Steffen Brummer
- */
-
-/*
  *  vfb2.c -- Virtual frame buffer device with pollable output.
  *
  *  Based on linux/drivers/video/vfb.c -- Virtual frame buffer device
@@ -447,7 +440,7 @@ static int vfb_probe(struct platform_device *dev)
         goto err;
 
     info->screen_base = (char __iomem *)videomemory;
-    info->fbops = &vfb_ops;
+    info->fbops = (struct fb_ops*)&vfb_ops;
 
     if (!fb_find_mode(&info->var, info, mode_option,
               NULL, 0, &vfb_default, 8)){
