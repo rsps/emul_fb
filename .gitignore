@@ -11,5 +11,5 @@ CTestTestfile.cmake
 _deps
 /build/
 /ext-libs/
-/.cproject
-/.project
+.cproject
+.project

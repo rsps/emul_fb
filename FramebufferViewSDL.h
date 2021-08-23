@@ -25,7 +25,7 @@
 class FramebufferViewSDL
 {
 public:
-    FramebufferViewSDL(int aWidth, int aHeight);
+    FramebufferViewSDL(int aWidth, int aHeight, int aVirtualWidth, int aVirtualHeight);
     virtual ~FramebufferViewSDL();
 
     void Render();

@@ -30,7 +30,7 @@
      *  The default can be overridden if the driver is compiled as a module
      */
 
-#define VIDEOMEMSIZE    (1*1024*1024)   /* 1 MB */
+#define VIDEOMEMSIZE    (480*800*4*2)   /* 3 MB */
 
 static void *videomemory;
 static u_long videomemorysize = VIDEOMEMSIZE;
@@ -39,12 +39,12 @@ MODULE_PARM_DESC(videomemorysize, "RAM available to frame buffer (in bytes)");
 
 static char *mode_option = NULL;
 module_param(mode_option, charp, 0);
-MODULE_PARM_DESC(mode_option, "Preferred video mode (e.g. 640x480-8@60)");
+MODULE_PARM_DESC(mode_option, "Preferred video mode (e.g. 480x800-32@60)");
 
 static const struct fb_videomode vfb_default = {
-    .xres =     640,
-    .yres =     480,
-    .pixclock = 20000,
+    .xres =     480,
+    .yres =     800
+    .pixclock = 4883,
     .left_margin =  64,
     .right_margin = 64,
     .upper_margin = 32,
@@ -55,18 +55,14 @@ static const struct fb_videomode vfb_default = {
 };
 
 static struct fb_fix_screeninfo vfb_fix = {
-    .id =       "Virtual FB",
+    .id =       "Virtual FB 2",
     .type =     FB_TYPE_PACKED_PIXELS,
-    .visual =   FB_VISUAL_PSEUDOCOLOR,
+    .visual =   FB_VISUAL_DIRECTCOLOR,
     .xpanstep = 1,
     .ypanstep = 1,
     .ywrapstep =    1,
     .accel =    FB_ACCEL_NONE,
 };
-
-static bool vfb_enable __initdata = 0;  /* disabled by default */
-module_param(vfb_enable, bool, 0);
-MODULE_PARM_DESC(vfb_enable, "Enable Virtual FB driver");
 
 static int vfb_check_var(struct fb_var_screeninfo *var,
              struct fb_info *info);
@@ -88,7 +84,7 @@ static const struct fb_ops vfb_ops = {
     .fb_fillrect    = sys_fillrect,
     .fb_copyarea    = sys_copyarea,
     .fb_imageblit   = sys_imageblit,
-    .fb_mmap    = vfb_mmap,
+    .fb_mmap        = vfb_mmap,
 };
 
     /*
@@ -396,12 +392,8 @@ static int __init vfb_setup(char *options)
 {
     char *this_opt;
 
-    vfb_enable = 0;
-
     if (!options)
         return 1;
-
-    vfb_enable = 1;
 
     if (!*options)
         return 1;
@@ -411,7 +403,6 @@ static int __init vfb_setup(char *options)
             continue;
         /* Test disable for backwards compatibility */
         if (!strcmp(this_opt, "disable"))
-            vfb_enable = 0;
         else
             mode_option = this_opt;
     }
@@ -513,9 +504,6 @@ static int __init vfb_init(void)
         return -ENODEV;
     vfb_setup(option);
 #endif
-
-    if (!vfb_enable)
-        return -ENXIO;
 
     ret = platform_driver_register(&vfb_driver);
 

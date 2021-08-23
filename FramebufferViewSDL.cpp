@@ -26,12 +26,13 @@
 
 using namespace SDL2pp;
 
-FramebufferViewSDL::FramebufferViewSDL(int aWidth, int aHeight)
+FramebufferViewSDL::FramebufferViewSDL(int aWidth, int aHeight, int aVirtualWidth, int aVirtualHeight)
 {
     mHeight = aHeight;
     mWidth = aWidth;
 
-    mpBuffer = new uint32_t[aHeight * aWidth];
+    mpBuffer = new uint32_t[aVirtualHeight * aVirtualWidth];
+    std::memset(mpBuffer, 0, aVirtualHeight * aVirtualWidth * sizeof(uint32_t));
 
     mpSdl = new SDL(SDL_INIT_VIDEO);
 
@@ -105,7 +106,7 @@ bool FramebufferViewSDL::PollEvents()
  * \param aOffset Offset into destination buffer in pixels.
  * \return Number of pixels written to buffer.
  */
-uint32_t FramebufferViewSDL::Write(const uint32_t *aData, uint32_t aSize, uint32_t aOffset)
+uint32_t FramebufferViewSDL::Write(const uint32_t *aData, uint32_t aSize, uint32_t aOffset, uint32_t aYOffset)
 {
     if (aOffset > (mHeight * mWidth)) {
         return 0;

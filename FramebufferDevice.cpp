@@ -94,7 +94,7 @@ static void write(fuse_req_t req, const char *buf, size_t size, off_t off, struc
 static void ioctl(fuse_req_t req, int cmd, void *arg, struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz, size_t out_bufsz)
 {
 
-    LOG("ioctl %d: insize: %zu outsize: %zu", cmd, in_bufsz, out_bufsz);
+    LOG("ioctl ", cmd, ": insize: ", in_bufsz, " outsize: ", out_bufsz);
     switch (cmd) {
         case FBIOGET_FSCREENINFO:
             if (in_bufsz == 0) {
@@ -125,6 +125,9 @@ static void ioctl(fuse_req_t req, int cmd, void *arg, struct fuse_file_info *fi,
                 FramebufferDevice::Get().SetVScreenInfo(in_buf, in_bufsz);
                 fuse_reply_ioctl(req, 0, nullptr, 0);
             }
+            break;
+
+        case FBIOPAN_DISPLAY:
             break;
 
         case 23:
@@ -159,7 +162,7 @@ static const struct cuse_lowlevel_ops cuse_clop = {
     .open = open,
     .read = read,
     .write = write,
-    .ioctl = ioctl
+    .ioctl = ioctl,
 };
 
 
@@ -176,16 +179,20 @@ FramebufferDevice& FramebufferDevice::Get()
 
 FramebufferDevice::FramebufferDevice()
 {
-    mpFbView = new FramebufferViewSDL(480, 800);
+    mpFbView = new FramebufferViewSDL(480, 800, 480, 800);
 
     memset(&mFbFix, 0, sizeof(mFbFix));
     strcpy(mFbFix.id, "emul_fb");
     mFbFix.line_length = sizeof(uint32_t) * GetView().GetWidth();
+    mFbFix.smem_start = 0;
+    mFbFix.smem_len = 0;
 
     memset(&mFbVar, 0, sizeof(mFbVar));
+    mFbVar.xres = GetView().GetWidth();
+    mFbVar.yres = GetView().GetHeight();
     mFbVar.xres_virtual = GetView().GetWidth();
     mFbVar.yres_virtual = GetView().GetHeight();
-    mFbVar.bits_per_pixel = sizeof(uint32_t);
+    mFbVar.bits_per_pixel = sizeof(uint32_t) * 8;
 }
 
 FramebufferDevice::~FramebufferDevice()
@@ -239,6 +246,8 @@ void FramebufferDevice::SetVScreenInfo(const void *in_buf, size_t in_bufsz)
     }
 
     memcpy(&mFbVar, in_buf, in_bufsz);
+
+    LOG("Creating Framebuffer: ", mFbVar.xres_virtual, ", ", mFbVar.yres_virtual);
 
     mpFbView = new FramebufferViewSDL(mFbVar.xres_virtual, mFbVar.yres_virtual);
 }
