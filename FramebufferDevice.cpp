@@ -83,7 +83,8 @@ static void write(fuse_req_t req, const char *buf, size_t size, off_t off, struc
     uint32_t written = FramebufferDevice::Get().GetView().Write(
         reinterpret_cast<const uint32_t*>(buf),
         static_cast<uint32_t>(size) / sizeof(uint32_t),
-        (static_cast<uint32_t>(off) + write_offset) / sizeof(uint32_t));
+        (static_cast<uint32_t>(off) + write_offset) / sizeof(uint32_t),
+        0);
 
     written *= sizeof(uint32_t);
     write_offset += written;
@@ -249,7 +250,7 @@ void FramebufferDevice::SetVScreenInfo(const void *in_buf, size_t in_bufsz)
 
     LOG("Creating Framebuffer: ", mFbVar.xres_virtual, ", ", mFbVar.yres_virtual);
 
-    mpFbView = new FramebufferViewSDL(mFbVar.xres_virtual, mFbVar.yres_virtual);
+    mpFbView = new FramebufferViewSDL(mFbVar.xres, mFbVar.yres, mFbVar.xres_virtual, mFbVar.yres_virtual);
 }
 
 void FramebufferDevice::SessionLoop()

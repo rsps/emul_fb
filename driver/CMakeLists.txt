@@ -12,11 +12,20 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 find_package(KernelHeaders REQUIRED)
 include_directories(${KERNELHEADERS_INCLUDE_DIRS})
 
-#include_directories(/lib/modules/5.4.0-81-generic/build/include/ /lib/modules/5.4.0-81-generic/build/arch/x86/include/)
-
 set(module_sources vfb2.c)
 
-add_library(${PROJECT_NAME}-lib STATIC vfb2-test.c)
+add_compile_options(
+    -I${KERNELHEADERS_DIR}/arch/x86/include/generated
+    -I${KERNELHEADERS_DIR}/arch/x86/include/uapi
+    -I${KERNELHEADERS_DIR}/arch/x86/include/generated/uapi
+    -I${KERNELHEADERS_DIR}/include/uapi
+    -include ${KERNELHEADERS_DIR}/include/linux/kconfig.h
+    -I${KERNELHEADERS_DIR}/ubuntu/include
+    -include ${KERNELHEADERS_DIR}/include/linux/compiler_types.h
+    -D__KERNEL__
+    -DMODULE
+    )
+add_library(${PROJECT_NAME}-lib STATIC vfb2.c)
 #get_target_property(module_sources mymodule-lib SOURCES)
 #list(APPEND module_sources module.c)
 
@@ -31,7 +40,7 @@ configure_file(Kbuild.in Kbuild @ONLY)
 #endforeach()
 
 set(DRIVER_FILE ${PROJECT_NAME}.ko)
-set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR} src=${CMAKE_CURRENT_SOURCE_DIR})
+set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR} src=${CMAKE_CURRENT_SOURCE_DIR} V=1)
 #set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR})
 
 add_custom_command(OUTPUT ${DRIVER_FILE}

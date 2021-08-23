@@ -37,7 +37,7 @@ public:
     uint32_t GetPixel(int aX, int aY) { return mpBuffer[(aY * mWidth) + aX]; }
     void SetPixel(int aX, int aY, uint32_t aValue) { mpBuffer[(aY * mWidth) + aX] = aValue; }
 
-    uint32_t Write(const uint32_t* aData, uint32_t aSize, uint32_t aOffset);
+    uint32_t Write(const uint32_t* aData, uint32_t aSize, uint32_t aOffset, uint32_t aYOffset);
 
 protected:
     SDL2pp::SDL *mpSdl;

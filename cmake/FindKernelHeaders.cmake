@@ -8,9 +8,8 @@ execute_process(
 # Find the headers
 find_path(KERNELHEADERS_DIR
         include/linux/user.h
-        PATHS /lib/modules/${KERNEL_RELEASE}/build
-            /usr/src/kernels/${KERNEL_RELEASE}
-            /usr/src/linux-headers-${KERNEL_RELEASE}
+        PATHS 
+            /lib/modules/${KERNEL_RELEASE}/build/
         )
 
 message(STATUS "Kernel release: ${KERNEL_RELEASE}")
@@ -29,15 +28,3 @@ endif (KERNELHEADERS_DIR)
 
 mark_as_advanced(KERNELHEADERS_FOUND)
 
-
-#set(kerneldir "" CACHE STRING "Path to the kernel build directory")
-#if("${kerneldir}" STREQUAL "")
-#  execute_process(COMMAND uname -r OUTPUT_VARIABLE uname_r
-#                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-#  set(kerneldir "/lib/modules/${uname_r}/build")
-#endif()
-#find_file(kernel_makefile NAMES Makefile
-#                          PATHS ${kerneldir} NO_DEFAULT_PATH)
-#if(NOT kernel_makefile)
-#  message(FATAL_ERROR "There is no Makefile in kerneldir!")
-#endif()
