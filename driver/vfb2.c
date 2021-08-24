@@ -43,7 +43,7 @@ MODULE_PARM_DESC(mode_option, "Preferred video mode (e.g. 480x800-32@60)");
 
 static const struct fb_videomode vfb_default = {
     .xres =     480,
-    .yres =     800
+    .yres =     800,
     .pixclock = 4883,
     .left_margin =  64,
     .right_margin = 64,

@@ -19,9 +19,9 @@ add_compile_options(
     -I${KERNELHEADERS_DIR}/arch/x86/include/uapi
     -I${KERNELHEADERS_DIR}/arch/x86/include/generated/uapi
     -I${KERNELHEADERS_DIR}/include/uapi
-    -include ${KERNELHEADERS_DIR}/include/linux/kconfig.h
+    -include${KERNELHEADERS_DIR}/include/linux/kconfig.h
     -I${KERNELHEADERS_DIR}/ubuntu/include
-    -include ${KERNELHEADERS_DIR}/include/linux/compiler_types.h
+    -include${KERNELHEADERS_DIR}/include/linux/compiler_types.h
     -D__KERNEL__
     -DMODULE
     )
@@ -40,7 +40,7 @@ configure_file(Kbuild.in Kbuild @ONLY)
 #endforeach()
 
 set(DRIVER_FILE ${PROJECT_NAME}.ko)
-set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR} src=${CMAKE_CURRENT_SOURCE_DIR} V=1)
+set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR} src=${CMAKE_CURRENT_SOURCE_DIR})
 #set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR})
 
 add_custom_command(OUTPUT ${DRIVER_FILE}
