@@ -23,6 +23,10 @@
 #include <linux/fb.h>
 #include <linux/init.h>
 
+#include <linux/poll.h>
+#include <linux/device.h>
+#include <linux/fs.h>
+
     /*
      *  RAM we reserve for the frame buffer. This defines the maximum screen
      *  size
@@ -84,7 +88,25 @@ static const struct fb_ops vfb_ops = {
     .fb_fillrect    = sys_fillrect,
     .fb_copyarea    = sys_copyarea,
     .fb_imageblit   = sys_imageblit,
-    .fb_mmap        = vfb_mmap,
+    .fb_mmap        = vfb_mmap
+};
+
+#define DEVICE_NAME "framebuffer_view"
+
+static int majorNumber;
+static DECLARE_WAIT_QUEUE_HEAD(pan_wait);
+
+static int     dev_open(struct inode *, struct file *);
+static int     dev_release(struct inode *, struct file *);
+static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
+static unsigned int dev_poll(struct file *file, poll_table *wait);
+
+static struct file_operations fops =
+{
+   .open = dev_open,
+   .read = dev_read,
+   .release = dev_release,
+   .poll = dev_poll
 };
 
     /*
@@ -220,6 +242,9 @@ static int vfb_check_var(struct fb_var_screeninfo *var,
         var->transp.offset = 24;
         var->transp.length = 8;
         break;
+
+    default:
+        return -EINVAL;
     }
     var->red.msb_right = 0;
     var->green.msb_right = 0;
@@ -247,6 +272,8 @@ static int vfb_set_par(struct fb_info *info)
     case 32:
         info->fix.visual = FB_VISUAL_TRUECOLOR;
         break;
+    default:
+        return -EINVAL;
     }
 
     info->fix.line_length = get_line_length(info->var.xres_virtual,
@@ -317,6 +344,8 @@ static int vfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
         /* hey, there is bug in transp handling... */
         transp = CNVT_TOHW(transp, 8);
         break;
+    default:
+        break;
     }
 #undef CNVT_TOHW
     /* Truecolor has hardware independent palette */
@@ -340,6 +369,8 @@ static int vfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
         case 32:
             ((u32 *) (info->pseudo_palette))[regno] = v;
             break;
+        default:
+            return -EINVAL;
         }
         return 0;
     }
@@ -370,6 +401,9 @@ static int vfb_pan_display(struct fb_var_screeninfo *var,
         info->var.vmode |= FB_VMODE_YWRAP;
     else
         info->var.vmode &= ~FB_VMODE_YWRAP;
+
+    wake_up_interruptible(&pan_wait);
+
     return 0;
 }
 
@@ -381,6 +415,92 @@ static int vfb_mmap(struct fb_info *info,
             struct vm_area_struct *vma)
 {
     return remap_vmalloc_range(vma, (void *)info->fix.smem_start, vma->vm_pgoff);
+}
+
+/* **********************************************************************
+ * Device handlers for /dev/spectrometer
+ * **********************************************************************
+ */
+
+static int dev_open(struct inode *inodep, struct file *filep)
+{
+    int err = 0;
+
+    pr_info("dev_open enter\n");
+
+    return err;
+}
+
+static int dev_release(struct inode *inodep, struct file *filep)
+{
+    int err = 0;
+
+    pr_info("dev_release enter\n");
+
+    return err;
+}
+
+static unsigned int dev_poll(struct file *filep, poll_table *wait)
+{
+    unsigned int ret = 0;
+
+    pr_info("dev_poll enter\n");
+
+    poll_wait(filep, &pan_wait, wait);
+
+    if (spiDev->spectrum_state == SPEC_STATE_DATA) {
+        ret = POLLIN | POLLRDNORM;
+    }
+
+    pr_info("dev_poll exit. return(%u)\n", ret);
+
+    return ret;
+}
+
+
+static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
+{
+    int remaining;
+    u32 result;
+    struct spidev_data *spiDev = filep->private_data;
+
+    pr_info("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset, spiDev->spectrum_state );
+
+    if(spiDev->spectrum_state != SPEC_STATE_DATA) {
+        if (filep->f_flags & O_NONBLOCK) {
+            return -EAGAIN;
+        }
+    }
+
+    while (spiDev->spectrum_state != SPEC_STATE_DATA) {
+        if (spiDev->spectrum_state == SPEC_STATE_NONE) {
+            return -ENODATA;
+        }
+        msleep(10);
+    }
+
+    if ((*offset > spiDev->spectrum_size) && (len > 0)) {
+        return -ENOBUFS;
+    }
+
+    result = min((int)len, max(0, (int)(spiDev->spectrum_size - *offset)));
+
+    if (debugMode & 0x01)
+        pr_info("dev_read: Copying data offset(%u), result(%u)\n", (u32)*offset, result);
+
+    /* copy_to_user returns number of bytes that could NOT be copied: 0 = success. */
+    remaining = copy_to_user(buffer, &spiDev->spectrum_data[*offset], result);
+    if(0 != remaining) {
+        dev_err(&spiDev->spi->dev, "copy_to_user failed. offset=(%u), remaining=(%d)\n", (u32)*offset, remaining);
+        return -ENOBUFS;
+    }
+
+    *offset += result;
+
+    if (debugMode & 0x01)
+        pr_info("wasatch dev_read exit. state(%u) return(%u)\n", spiDev->spectrum_state, result );
+
+    return result;
 }
 
 #ifndef MODULE
@@ -460,6 +580,13 @@ static int vfb_probe(struct platform_device *dev)
 
     fb_info(info, "Virtual frame buffer device, using %ldK of video memory\n",
         videomemorysize >> 10);
+
+    majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
+    if (majorNumber < 0) {
+        dev_err(dev, DEVICE_NAME " failed to register a major number\n");
+        return majorNumber;
+    }
+
     return 0;
 err2:
     fb_dealloc_cmap(&info->cmap);
@@ -479,6 +606,8 @@ static int vfb_remove(struct platform_device *dev)
         vfree(videomemory);
         fb_dealloc_cmap(&info->cmap);
         framebuffer_release(info);
+
+        unregister_chrdev(majorNumber, DEVICE_NAME);
     }
     return 0;
 }
