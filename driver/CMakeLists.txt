@@ -25,7 +25,7 @@ add_compile_options(
     -D__KERNEL__
     -DMODULE
     )
-add_library(${PROJECT_NAME}-lib STATIC vfb2.c)
+add_library(${PROJECT_NAME} STATIC vfb2.c)
 #get_target_property(module_sources mymodule-lib SOURCES)
 #list(APPEND module_sources module.c)
 

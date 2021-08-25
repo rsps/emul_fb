@@ -24,6 +24,7 @@
 #include <linux/init.h>
 
 #include <linux/poll.h>
+#include <linux/wait.h>
 #include <linux/device.h>
 #include <linux/fs.h>
 
@@ -95,6 +96,7 @@ static const struct fb_ops vfb_ops = {
 
 static int majorNumber;
 static DECLARE_WAIT_QUEUE_HEAD(pan_wait);
+static struct fb_info *fb_var_info;
 
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
@@ -448,9 +450,7 @@ static unsigned int dev_poll(struct file *filep, poll_table *wait)
 
     poll_wait(filep, &pan_wait, wait);
 
-    if (spiDev->spectrum_state == SPEC_STATE_DATA) {
-        ret = POLLIN | POLLRDNORM;
-    }
+    ret = POLLIN | POLLRDNORM;
 
     pr_info("dev_poll exit. return(%u)\n", ret);
 
@@ -462,43 +462,28 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 {
     int remaining;
     u32 result;
-    struct spidev_data *spiDev = filep->private_data;
 
-    pr_info("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset, spiDev->spectrum_state );
+    pr_info("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset);
 
-    if(spiDev->spectrum_state != SPEC_STATE_DATA) {
-        if (filep->f_flags & O_NONBLOCK) {
-            return -EAGAIN;
-        }
-    }
-
-    while (spiDev->spectrum_state != SPEC_STATE_DATA) {
-        if (spiDev->spectrum_state == SPEC_STATE_NONE) {
-            return -ENODATA;
-        }
-        msleep(10);
-    }
-
-    if ((*offset > spiDev->spectrum_size) && (len > 0)) {
+    if ((*offset > sizeof(struct fb_info)) && (len > 0)) {
         return -ENOBUFS;
     }
 
-    result = min((int)len, max(0, (int)(spiDev->spectrum_size - *offset)));
+    result = min((int)len, max(0, (int)(sizeof(struct fb_info) - *offset)));
 
-    if (debugMode & 0x01)
-        pr_info("dev_read: Copying data offset(%u), result(%u)\n", (u32)*offset, result);
+    pr_info("dev_read: Copying data offset(%u), result(%u)\n", (u32)*offset, result);
+
+    remaining = copy_to_user(buffer, &fb_var_info, result);
 
     /* copy_to_user returns number of bytes that could NOT be copied: 0 = success. */
-    remaining = copy_to_user(buffer, &spiDev->spectrum_data[*offset], result);
     if(0 != remaining) {
-        dev_err(&spiDev->spi->dev, "copy_to_user failed. offset=(%u), remaining=(%d)\n", (u32)*offset, remaining);
+        pr_err("copy_to_user failed. offset=(%u), remaining=(%d)\n", (u32)*offset, remaining);
         return -ENOBUFS;
     }
 
     *offset += result;
 
-    if (debugMode & 0x01)
-        pr_info("wasatch dev_read exit. state(%u) return(%u)\n", spiDev->spectrum_state, result );
+    pr_info("dev_read exit. Return(%u)\n", result );
 
     return result;
 }
@@ -583,9 +568,11 @@ static int vfb_probe(struct platform_device *dev)
 
     majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
     if (majorNumber < 0) {
-        dev_err(dev, DEVICE_NAME " failed to register a major number\n");
+        dev_err(&dev->dev, DEVICE_NAME " failed to register a major number\n");
         return majorNumber;
     }
+
+    fb_var_info = info;
 
     return 0;
 err2:
