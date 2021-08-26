@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.16)
 
 project (emul_fb)
 
-set(CMAKE_VERBOSE_MAKEFILE on)
+set(CMAKE_VERBOSE_MAKEFILE off)
 
 add_subdirectory(driver)
 

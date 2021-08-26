@@ -92,7 +92,7 @@ static const struct fb_ops vfb_ops = {
     .fb_mmap        = vfb_mmap
 };
 
-#define DEVICE_NAME "framebuffer_view"
+#define DEVICE_NAME "fb_view"
 
 static int majorNumber;
 static DECLARE_WAIT_QUEUE_HEAD(pan_wait);
@@ -572,6 +572,23 @@ static int vfb_probe(struct platform_device *dev)
         return majorNumber;
     }
 
+    cameraCharClass = class_create(THIS_MODULE, CLASS_NAME);
+    if (IS_ERR(cameraCharClass)) {
+        unregister_chrdev(majorNumber, DEVICE_NAME);
+        dev_err(&spi->dev, "Failed to register device class\n");
+        return PTR_ERR(cameraCharClass);
+    }
+    cameraCharClass->dev_groups = attr_groups;
+
+    wasatchCharDevice = device_create(cameraCharClass, &spi->dev, MKDEV(majorNumber, 0), spiDev, DEVICE_NAME);
+    if (IS_ERR(wasatchCharDevice)) {
+        class_destroy(cameraCharClass);
+        unregister_chrdev(majorNumber, DEVICE_NAME);
+        dev_err(&spi->dev, "Failed to create the device\n");
+        return PTR_ERR(wasatchCharDevice);
+    }
+
+
     fb_var_info = info;
 
     return 0;
@@ -603,7 +620,7 @@ static struct platform_driver vfb_driver = {
     .probe  = vfb_probe,
     .remove = vfb_remove,
     .driver = {
-        .name   = "vfb",
+        .name   = "vfb2",
     },
 };
 
@@ -613,18 +630,10 @@ static int __init vfb_init(void)
 {
     int ret = 0;
 
-#ifndef MODULE
-    char *option = NULL;
-
-    if (fb_get_options("vfb", &option))
-        return -ENODEV;
-    vfb_setup(option);
-#endif
-
     ret = platform_driver_register(&vfb_driver);
 
     if (!ret) {
-        vfb_device = platform_device_alloc("vfb", 0);
+        vfb_device = platform_device_alloc("vfb2", 0);
 
         if (vfb_device)
             ret = platform_device_add(vfb_device);
