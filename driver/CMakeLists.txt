@@ -12,6 +12,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 find_package(KernelHeaders REQUIRED)
 include_directories(${KERNELHEADERS_INCLUDE_DIRS})
 
+    -include${KERNELHEADERS_DIR}/include/linux/kconfig.h
+    -include${KERNELHEADERS_DIR}/include/linux/compiler_types.h
+
 set(module_sources vfb2.c)
 
 add_compile_options(
