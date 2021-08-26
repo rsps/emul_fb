@@ -14,6 +14,7 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/string.h>
+#include <linux/device.h>
 #include <linux/mm.h>
 #include <linux/vmalloc.h>
 #include <linux/delay.h>
@@ -25,7 +26,6 @@
 
 #include <linux/poll.h>
 #include <linux/wait.h>
-#include <linux/device.h>
 #include <linux/fs.h>
 
     /*
@@ -95,6 +95,9 @@ static const struct fb_ops vfb_ops = {
 #define DEVICE_NAME "fb_view"
 
 static int majorNumber;
+static struct class*  viewClass  = NULL;
+static struct device* viewDevice = NULL;
+
 static DECLARE_WAIT_QUEUE_HEAD(pan_wait);
 static struct fb_info *fb_var_info;
 
@@ -488,37 +491,10 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
     return result;
 }
 
-#ifndef MODULE
+
 /*
- * The virtual framebuffer driver is only enabled if explicitly
- * requested by passing 'video=vfb:' (or any actual options).
+ *  Initialisation
  */
-static int __init vfb_setup(char *options)
-{
-    char *this_opt;
-
-    if (!options)
-        return 1;
-
-    if (!*options)
-        return 1;
-
-    while ((this_opt = strsep(&options, ",")) != NULL) {
-        if (!*this_opt)
-            continue;
-        /* Test disable for backwards compatibility */
-        if (!strcmp(this_opt, "disable"))
-        else
-            mode_option = this_opt;
-    }
-    return 1;
-}
-#endif  /*  MODULE  */
-
-    /*
-     *  Initialisation
-     */
-
 static int vfb_probe(struct platform_device *dev)
 {
     struct fb_info *info;
@@ -572,22 +548,21 @@ static int vfb_probe(struct platform_device *dev)
         return majorNumber;
     }
 
-    cameraCharClass = class_create(THIS_MODULE, CLASS_NAME);
-    if (IS_ERR(cameraCharClass)) {
+    viewClass = class_create(THIS_MODULE, DEVICE_NAME);
+    if (IS_ERR(viewClass)) {
         unregister_chrdev(majorNumber, DEVICE_NAME);
-        dev_err(&spi->dev, "Failed to register device class\n");
-        return PTR_ERR(cameraCharClass);
+        dev_err(&dev->dev, "Failed to register device class\n");
+        return PTR_ERR(viewClass);
     }
-    cameraCharClass->dev_groups = attr_groups;
+//    viewClass->dev_groups = attr_groups;
 
-    wasatchCharDevice = device_create(cameraCharClass, &spi->dev, MKDEV(majorNumber, 0), spiDev, DEVICE_NAME);
-    if (IS_ERR(wasatchCharDevice)) {
-        class_destroy(cameraCharClass);
+    viewDevice = device_create(viewClass, &dev->dev, MKDEV(majorNumber, 0), dev, DEVICE_NAME);
+    if (IS_ERR(viewDevice)) {
+        class_destroy(viewClass);
         unregister_chrdev(majorNumber, DEVICE_NAME);
-        dev_err(&spi->dev, "Failed to create the device\n");
-        return PTR_ERR(wasatchCharDevice);
+        dev_err(&dev->dev, "Failed to create the device\n");
+        return PTR_ERR(viewDevice);
     }
-
 
     fb_var_info = info;
 
@@ -611,6 +586,9 @@ static int vfb_remove(struct platform_device *dev)
         fb_dealloc_cmap(&info->cmap);
         framebuffer_release(info);
 
+        device_destroy(viewClass, MKDEV(majorNumber, 0));
+        class_unregister(viewClass);
+        class_destroy(viewClass);
         unregister_chrdev(majorNumber, DEVICE_NAME);
     }
     return 0;
