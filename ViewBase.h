@@ -1,5 +1,5 @@
 /*
- * emul_fb.cpp
+ * Viewer.h
  *
  * Copyright (C) 2021 RSP Systems <software@rspsystems.com>
  *
@@ -16,26 +16,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#ifndef VIEWBASE_H_
+#define VIEWBASE_H_
 
-#include <iostream>
-#include <exception>
+#include <string>
 
-#include "ViewBase.h"
-
-
-int main(int argc, char **argv)
+class ViewBase
 {
-    std::cout << "Framebuffer Emulator ver. 0.2.0" << std::endl;
+public:
+    ViewBase(const std::string aFrameBufferName, const std::string aVievDeviceName);
+    virtual ~ViewBase();
 
-    try {
-        Viewer view("/dev/fb1", "/dev/fb_view");
+    void run();
 
-        view.run();
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
+    virtual bool PollEvents() = 0; // Return false to terminate
+    virtual void Resize(int aWidth, int aHeight) = 0;
 
-    std::cout << "Done" << std::endl;
-    return 0;
-}
+protected:
+    int mViewFd;
+    int mFrameBufFd;
+
+    uint8_t mpBuffer;
+};
+
+#endif /* VIEWBASE_H_ */

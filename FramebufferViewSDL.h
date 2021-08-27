@@ -20,22 +20,24 @@
 #define FRAMEBUFFERVIEWSDL_H_
 
 #include <SDL2pp/SDL2pp.hh>
+#include "ViewBase.h"
 
 
-class FramebufferViewSDL
+class FramebufferViewSDL : public ViewBase
 {
 public:
-    FramebufferViewSDL(int aWidth, int aHeight, int aVirtualWidth, int aVirtualHeight);
+    FramebufferViewSDL(uint8_t *apBuffer);
     virtual ~FramebufferViewSDL();
 
+    void Resize(int aWidth, int aHeight) overload
     void Render();
     bool PollEvents();
 
     uint32_t GetHeight() { return mHeight; }
     uint32_t GetWidth()  { return mWidth; }
 
-    uint32_t GetPixel(int aX, int aY) { return mpBuffer[(aY * mWidth) + aX]; }
-    void SetPixel(int aX, int aY, uint32_t aValue) { mpBuffer[(aY * mWidth) + aX] = aValue; }
+    uint32_t GetPixel(int aX, int aY);
+    void SetPixel(int aX, int aY, uint32_t aValue);
 
     uint32_t Write(const uint32_t* aData, uint32_t aSize, uint32_t aOffset, uint32_t aYOffset);
 
@@ -48,7 +50,7 @@ protected:
     uint32_t mHeight;
     uint32_t mWidth;
 
-    uint32_t* mpBuffer;
+    uint8_t* mpBuffer;
 };
 
 #endif /* FRAMEBUFFERVIEWSDL_H_ */

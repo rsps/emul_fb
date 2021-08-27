@@ -27,6 +27,7 @@
 #include <linux/poll.h>
 #include <linux/wait.h>
 #include <linux/fs.h>
+#include <linux/uaccess.h>
 
     /*
      *  RAM we reserve for the frame buffer. This defines the maximum screen
@@ -95,6 +96,7 @@ static const struct fb_ops vfb_ops = {
 #define DEVICE_NAME "fb_view"
 
 static int majorNumber;
+static int minorNumber;
 static struct class*  viewClass  = NULL;
 static struct device* viewDevice = NULL;
 
@@ -108,10 +110,11 @@ static unsigned int dev_poll(struct file *file, poll_table *wait);
 
 static struct file_operations fops =
 {
-   .open = dev_open,
-   .read = dev_read,
-   .release = dev_release,
-   .poll = dev_poll
+    .owner = THIS_MODULE,
+    .open = dev_open,
+    .read = dev_read,
+    .release = dev_release,
+    .poll = dev_poll
 };
 
     /*
@@ -476,7 +479,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     pr_info("dev_read: Copying data offset(%u), result(%u)\n", (u32)*offset, result);
 
-    remaining = copy_to_user(buffer, &fb_var_info, result);
+    remaining = copy_to_user(buffer, fb_var_info, result);
 
     /* copy_to_user returns number of bytes that could NOT be copied: 0 = success. */
     if(0 != remaining) {

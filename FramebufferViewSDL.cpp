@@ -26,25 +26,23 @@
 
 using namespace SDL2pp;
 
-FramebufferViewSDL::FramebufferViewSDL(int aWidth, int aHeight, int aVirtualWidth, int aVirtualHeight)
+FramebufferViewSDL::FramebufferViewSDL(uint8_t *apBuffer)
 {
-    mHeight = aHeight;
-    mWidth = aWidth;
+    mpBuffer = apBuffer;
 
-    mpBuffer = new uint32_t[aVirtualHeight * aVirtualWidth];
     std::memset(mpBuffer, 0, aVirtualHeight * aVirtualWidth * sizeof(uint32_t));
 
     mpSdl = new SDL(SDL_INIT_VIDEO);
 
     mpWindow = new Window("Framebuffer Emulator",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            mWidth, mHeight,
+            480, 800,
             SDL_WINDOW_SKIP_TASKBAR);
 
     // Create accelerated video renderer with default driver
     mpRenderer = new Renderer(*mpWindow, -1, SDL_RENDERER_ACCELERATED);
 
-    mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, mWidth, mHeight);
+    mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 480, 800);
 }
 
 FramebufferViewSDL::~FramebufferViewSDL()
@@ -53,7 +51,6 @@ FramebufferViewSDL::~FramebufferViewSDL()
     delete mpRenderer;
     delete mpWindow;
     delete mpSdl;
-    delete mpBuffer;
 }
 
 /**

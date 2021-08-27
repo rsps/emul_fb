@@ -26,7 +26,7 @@ if(NOT libSDL2pp_POPULATED)
 endif()
 
 
-set(LIBFUSE "fuse3")
+#set(LIBFUSE "fuse3")
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -34,9 +34,9 @@ find_package(SDL2 REQUIRED)
 
 INCLUDE_DIRECTORIES(${SDL2PP_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
 
-add_executable(emul_fb emul_fb.cpp Epoll.cpp FramebufferViewSDL.cpp FramebufferDevice.cpp)
+add_executable(emul_fb emul_fb.cpp Epoll.cpp FramebufferViewSDL.cpp Viewer.cpp)
 
-target_link_libraries(emul_fb ${LIBFUSE} ${SDL2PP_LIBRARIES} ${SDL2_LIBRARIES})
+target_link_libraries(emul_fb ${SDL2PP_LIBRARIES} ${SDL2_LIBRARIES})
 
 
 include(GNUInstallDirs)
