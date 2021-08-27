@@ -5,7 +5,7 @@ project (vfb2 VERSION 0.1.0 LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE on)
 
 # Find kernel headers
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -60,4 +60,12 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${DRIVER_FILE}
 
 # And tell modprobe it exists
 install(CODE "execute_process(COMMAND depmod -a)")
+
+# Install udev rules to set ownership
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/99-permissions.rules
+        DESTINATION /etc/udev/rules.d/
+        PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT})
+
+# And tell udev they exists
+install(CODE "execute_process(COMMAND udevadm control --reload-rules)")
 

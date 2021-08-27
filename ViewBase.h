@@ -19,7 +19,9 @@
 #ifndef VIEWBASE_H_
 #define VIEWBASE_H_
 
+#include <cstdint>
 #include <string>
+#include <linux/fb.h>
 
 class ViewBase
 {
@@ -30,13 +32,17 @@ public:
     void run();
 
     virtual bool PollEvents() = 0; // Return false to terminate
+    virtual void Render() = 0;
     virtual void Resize(int aWidth, int aHeight) = 0;
 
 protected:
     int mViewFd;
     int mFrameBufFd;
 
-    uint8_t mpBuffer;
+    uint8_t* mpBuffer = nullptr;
+
+    struct fb_fix_screeninfo mFbFix;
+    struct fb_var_screeninfo mFbVar;
 };
 
 #endif /* VIEWBASE_H_ */

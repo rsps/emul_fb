@@ -34,7 +34,7 @@ find_package(SDL2 REQUIRED)
 
 INCLUDE_DIRECTORIES(${SDL2PP_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
 
-add_executable(emul_fb emul_fb.cpp Epoll.cpp FramebufferViewSDL.cpp Viewer.cpp)
+add_executable(emul_fb emul_fb.cpp Epoll.cpp FramebufferViewSDL.cpp ViewBase.cpp)
 
 target_link_libraries(emul_fb ${SDL2PP_LIBRARIES} ${SDL2_LIBRARIES})
 

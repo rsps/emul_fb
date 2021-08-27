@@ -26,31 +26,18 @@
 class FramebufferViewSDL : public ViewBase
 {
 public:
-    FramebufferViewSDL(uint8_t *apBuffer);
+    FramebufferViewSDL(const std::string aFrameBufferName, const std::string aVievDeviceName);
     virtual ~FramebufferViewSDL();
 
-    void Resize(int aWidth, int aHeight) overload
-    void Render();
-    bool PollEvents();
-
-    uint32_t GetHeight() { return mHeight; }
-    uint32_t GetWidth()  { return mWidth; }
-
-    uint32_t GetPixel(int aX, int aY);
-    void SetPixel(int aX, int aY, uint32_t aValue);
-
-    uint32_t Write(const uint32_t* aData, uint32_t aSize, uint32_t aOffset, uint32_t aYOffset);
+    void Resize(int aWidth, int aHeight) override;
+    void Render() override;
+    bool PollEvents() override;
 
 protected:
     SDL2pp::SDL *mpSdl;
     SDL2pp::Window *mpWindow;
     SDL2pp::Renderer *mpRenderer;
     SDL2pp::Texture *mpTexture;
-
-    uint32_t mHeight;
-    uint32_t mWidth;
-
-    uint8_t* mpBuffer;
 };
 
 #endif /* FRAMEBUFFERVIEWSDL_H_ */

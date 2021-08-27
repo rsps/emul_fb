@@ -26,12 +26,9 @@
 
 using namespace SDL2pp;
 
-FramebufferViewSDL::FramebufferViewSDL(uint8_t *apBuffer)
+FramebufferViewSDL::FramebufferViewSDL(const std::string aFrameBufferName, const std::string aVievDeviceName)
+    : ViewBase(aFrameBufferName, aVievDeviceName)
 {
-    mpBuffer = apBuffer;
-
-    std::memset(mpBuffer, 0, aVirtualHeight * aVirtualWidth * sizeof(uint32_t));
-
     mpSdl = new SDL(SDL_INIT_VIDEO);
 
     mpWindow = new Window("Framebuffer Emulator",
@@ -63,11 +60,34 @@ void FramebufferViewSDL::Render()
     {
         auto lock = mpTexture->Lock();
         uint32_t* pixels = static_cast<uint32_t*>(lock.GetPixels());
-        std::memcpy(pixels, mpBuffer, mHeight * mWidth * sizeof(uint32_t));
+
+        LOG("xres: ", mFbVar.xres, ", xoffset: ", mFbVar.xoffset);
+        LOG("yres: ", mFbVar.yres, ", yoffset: ", mFbVar.yoffset);
+        LOG("bits_per_pixel: ", mFbVar.bits_per_pixel, ", line_length: ", mFbFix.line_length);
+
+        for (uint32_t y = 0 ; y < mFbVar.yres ; y++) {
+            long location;
+            for (uint32_t x = 0 ; x < mFbVar.xres ; x++) {
+                location = ((x + mFbVar.xoffset) * (mFbVar.bits_per_pixel / 8)) + ((y + mFbVar.yoffset) * mFbFix.line_length);
+                pixels[x + (y * mFbVar.xres)] = *((uint32_t*) (mpBuffer + location));
+            }
+//            LOG("y: ", y, ", location: ", location);
+        }
     }
 //    mpRenderer->Clear();
     mpRenderer->Copy(*mpTexture);
     mpRenderer->Present();
+}
+
+void FramebufferViewSDL::Resize(int aWidth, int aHeight)
+{
+    if ((aWidth == mpWindow->GetWidth()) && (aHeight == mpWindow->GetHeight())) {
+        return;
+    }
+
+    mpWindow->SetSize(aWidth, aHeight);
+    delete mpTexture;
+    mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, aWidth, aHeight);
 }
 
 /**
@@ -94,26 +114,3 @@ bool FramebufferViewSDL::PollEvents()
     return true;
 }
 
-/**
- * \fn uint32_t Write(const uint32_t*, uint32_t, uint32_t)
- * \brief Write raw pixel data into the buffer.
- *
- * \param aData Pointer to incoming pixel data
- * \param aSize Number of pixels
- * \param aOffset Offset into destination buffer in pixels.
- * \return Number of pixels written to buffer.
- */
-uint32_t FramebufferViewSDL::Write(const uint32_t *aData, uint32_t aSize, uint32_t aOffset, uint32_t aYOffset)
-{
-    if (aOffset > (mHeight * mWidth)) {
-        return 0;
-    }
-
-    uint32_t written = std::min(aSize, (mHeight * mWidth) - aOffset);
-
-    std::memcpy(&mpBuffer[aOffset], aData, written * sizeof(uint32_t));
-
-    LOG("FramebufferViewSDL::Write(", aSize, ", ", aOffset, ") -> ", written);
-
-    return written;
-}

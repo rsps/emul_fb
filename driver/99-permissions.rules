@@ -1,0 +1,3 @@
+KERNEL=="fb[0-9]*", OWNER="root", GROUP="video", MODE="0666"
+KERNEL=="fb_view", OWNER="root", GROUP="video", MODE="0666"
+

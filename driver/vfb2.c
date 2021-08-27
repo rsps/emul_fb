@@ -96,12 +96,12 @@ static const struct fb_ops vfb_ops = {
 #define DEVICE_NAME "fb_view"
 
 static int majorNumber;
-static int minorNumber;
 static struct class*  viewClass  = NULL;
 static struct device* viewDevice = NULL;
 
 static DECLARE_WAIT_QUEUE_HEAD(pan_wait);
-static struct fb_info *fb_var_info;
+static int panned = 0;
+static struct fb_var_screeninfo *fb_var_info;
 
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
@@ -410,6 +410,9 @@ static int vfb_pan_display(struct fb_var_screeninfo *var,
     else
         info->var.vmode &= ~FB_VMODE_YWRAP;
 
+    pr_info("Display panned. yoffset: %d, %p==%p", info->var.yoffset, &info->var, fb_var_info);
+
+    panned = 1;
     wake_up_interruptible(&pan_wait);
 
     return 0;
@@ -436,6 +439,8 @@ static int dev_open(struct inode *inodep, struct file *filep)
 
     pr_info("dev_open enter\n");
 
+    panned = 0;
+
     return err;
 }
 
@@ -444,6 +449,8 @@ static int dev_release(struct inode *inodep, struct file *filep)
     int err = 0;
 
     pr_info("dev_release enter\n");
+
+    panned = -1;
 
     return err;
 }
@@ -456,7 +463,9 @@ static unsigned int dev_poll(struct file *filep, poll_table *wait)
 
     poll_wait(filep, &pan_wait, wait);
 
-    ret = POLLIN | POLLRDNORM;
+    if (panned == 1) {
+        ret = POLLIN | POLLRDNORM;
+    }
 
     pr_info("dev_poll exit. return(%u)\n", ret);
 
@@ -471,13 +480,29 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     pr_info("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset);
 
-    if ((*offset > sizeof(struct fb_info)) && (len > 0)) {
+    if ((*offset > sizeof(struct fb_var_screeninfo)) && (len > 0)) {
         return -ENOBUFS;
     }
 
-    result = min((int)len, max(0, (int)(sizeof(struct fb_info) - *offset)));
+    if (panned == 0) {
+        if (filep->f_flags & O_NONBLOCK) {
+            return -EAGAIN;
+        }
+    }
+
+    while (panned != 1) {
+        if (panned == -1) {
+            return -ENODATA;
+        }
+        msleep(10);
+    }
+    panned = 0;
+
+    result = min((int)len, max(0, (int)(sizeof(struct fb_var_screeninfo) - *offset)));
 
     pr_info("dev_read: Copying data offset(%u), result(%u)\n", (u32)*offset, result);
+
+    pr_info("dev_read. yoffset: %d", fb_var_info->yoffset);
 
     remaining = copy_to_user(buffer, fb_var_info, result);
 
@@ -518,7 +543,7 @@ static int vfb_probe(struct platform_device *dev)
     info->fbops = (struct fb_ops*)&vfb_ops;
 
     if (!fb_find_mode(&info->var, info, mode_option,
-              NULL, 0, &vfb_default, 8)){
+              NULL, 0, &vfb_default, 32)){
         fb_err(info, "Unable to find usable video mode.\n");
         retval = -EINVAL;
         goto err1;
@@ -567,7 +592,7 @@ static int vfb_probe(struct platform_device *dev)
         return PTR_ERR(viewDevice);
     }
 
-    fb_var_info = info;
+    fb_var_info = &info->var;
 
     return 0;
 err2:

@@ -20,7 +20,7 @@
 #include <iostream>
 #include <exception>
 
-#include "ViewBase.h"
+#include "FramebufferViewSDL.h"
 
 
 int main(int argc, char **argv)
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     std::cout << "Framebuffer Emulator ver. 0.2.0" << std::endl;
 
     try {
-        Viewer view("/dev/fb1", "/dev/fb_view");
+        FramebufferViewSDL view("/dev/fb0", "/dev/fb_view");
 
         view.run();
     }
