@@ -26,7 +26,7 @@
 class ViewBase
 {
 public:
-    ViewBase(const std::string aFrameBufferName, const std::string aVievDeviceName);
+    ViewBase(const std::string aFrameBufferName, const std::string aViewDeviceName);
     virtual ~ViewBase();
 
     void run();

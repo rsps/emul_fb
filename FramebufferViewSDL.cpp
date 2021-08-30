@@ -26,8 +26,8 @@
 
 using namespace SDL2pp;
 
-FramebufferViewSDL::FramebufferViewSDL(const std::string aFrameBufferName, const std::string aVievDeviceName)
-    : ViewBase(aFrameBufferName, aVievDeviceName)
+FramebufferViewSDL::FramebufferViewSDL(const std::string aFrameBufferName, const std::string aViewDeviceName)
+    : ViewBase(aFrameBufferName, aViewDeviceName)
 {
     mpSdl = new SDL(SDL_INIT_VIDEO);
 
@@ -63,7 +63,7 @@ void FramebufferViewSDL::Render()
 
         LOG("xres: ", mFbVar.xres, ", xoffset: ", mFbVar.xoffset);
         LOG("yres: ", mFbVar.yres, ", yoffset: ", mFbVar.yoffset);
-        LOG("bits_per_pixel: ", mFbVar.bits_per_pixel, ", line_length: ", mFbFix.line_length);
+        LOG("bits_per_pixel: ", mFbVar.bits_per_pixel, ", line_length: ", mFbFix.line_length, "\n");
 
         for (uint32_t y = 0 ; y < mFbVar.yres ; y++) {
             long location;
@@ -84,6 +84,8 @@ void FramebufferViewSDL::Resize(int aWidth, int aHeight)
     if ((aWidth == mpWindow->GetWidth()) && (aHeight == mpWindow->GetHeight())) {
         return;
     }
+
+    LOG("Resize(", aWidth, ", ", aHeight, ")");
 
     mpWindow->SetSize(aWidth, aHeight);
     delete mpTexture;

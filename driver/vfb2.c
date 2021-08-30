@@ -480,7 +480,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     pr_info("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset);
 
-    if ((*offset > sizeof(struct fb_var_screeninfo)) && (len > 0)) {
+    if (len > sizeof(struct fb_var_screeninfo)) {
         return -ENOBUFS;
     }
 
@@ -498,9 +498,9 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
     }
     panned = 0;
 
-    result = min((int)len, max(0, (int)(sizeof(struct fb_var_screeninfo) - *offset)));
+    result = min((int)len, (int)sizeof(struct fb_var_screeninfo));
 
-    pr_info("dev_read: Copying data offset(%u), result(%u)\n", (u32)*offset, result);
+    pr_info("dev_read: Copying %u bytes of data\n", result);
 
     pr_info("dev_read. yoffset: %d", fb_var_info->yoffset);
 
@@ -508,7 +508,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     /* copy_to_user returns number of bytes that could NOT be copied: 0 = success. */
     if(0 != remaining) {
-        pr_err("copy_to_user failed. offset=(%u), remaining=(%d)\n", (u32)*offset, remaining);
+        pr_err("copy_to_user failed. Remaining=(%d)\n", remaining);
         return -ENOBUFS;
     }
 

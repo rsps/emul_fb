@@ -20,13 +20,14 @@
 #define FRAMEBUFFERVIEWSDL_H_
 
 #include <SDL2pp/SDL2pp.hh>
+#include <string>
 #include "ViewBase.h"
 
 
 class FramebufferViewSDL : public ViewBase
 {
 public:
-    FramebufferViewSDL(const std::string aFrameBufferName, const std::string aVievDeviceName);
+    FramebufferViewSDL(const std::string aFrameBufferName, const std::string aViewDeviceName);
     virtual ~FramebufferViewSDL();
 
     void Resize(int aWidth, int aHeight) override;

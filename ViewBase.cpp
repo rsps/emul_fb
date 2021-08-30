@@ -15,9 +15,11 @@
 #include "ViewBase.h"
 #include "log.h"
 
-ViewBase::ViewBase(const std::string aFrameBufferName, const std::string aVievDeviceName)
+ViewBase::ViewBase(const std::string aFrameBufferName, const std::string aViewDeviceName)
 {
-    mViewFd = open(aVievDeviceName.c_str(), O_RDWR);
+    LOG("Emulating frame buffer in ", aFrameBufferName, " with view in ", aViewDeviceName);
+
+    mViewFd = open(aViewDeviceName.c_str(), O_RDWR);
     if (mViewFd == -1) {
         throw std::system_error(errno, std::generic_category(), "Failed to open view device");
     }
@@ -36,9 +38,15 @@ ViewBase::ViewBase(const std::string aFrameBufferName, const std::string aVievDe
         throw std::system_error(errno, std::generic_category(), "Failed to get variable screen info");
     }
 
-    LOG("smem_start: ", mFbFix.smem_start, ", smem_len: ", mFbFix.smem_len);
+    LOG("smem_start: ", mFbFix.smem_start, ", smem_len: ", mFbFix.smem_len, ", bpp: ", mFbVar.bits_per_pixel);
 
-    void *p = mmap((void*)mFbFix.smem_start, mFbFix.smem_len, PROT_READ, MAP_SHARED, mFrameBufFd, 0);
+    // We only support 32-bit colors for now.
+    if (mFbVar.bits_per_pixel != 32) {
+        throw std::runtime_error("Frame buffer reports unsupported color depth.");
+    }
+
+//    void *p = mmap((void*)mFbFix.smem_start, mFbFix.smem_len, PROT_READ, MAP_SHARED, mFrameBufFd, 0);
+    void *p = mmap(0, mFbFix.smem_len, PROT_READ, MAP_SHARED, mFrameBufFd, 0);
     if (p == reinterpret_cast<void*>(-1)) {
         throw std::system_error(errno, std::generic_category(), "Failed to mmap frame buffer");
     }
@@ -71,10 +79,11 @@ void ViewBase::run()
 
         if (counts > 0) {
             size_t bytes = read(mViewFd, &mFbVar, sizeof(mFbVar));
-            LOG("Read: ", bytes, ", should be: ", sizeof(mFbVar));
-            LOG("Resize(", mFbVar.xres, ", ", mFbVar.yres, ")");
+            if (bytes == -1) {
+                throw std::system_error(errno, std::generic_category(), "Failed to read from fb_view");
+            }
+            LOG("Read: ", bytes, ", should be: ", sizeof(mFbVar), ", yoffset: ", mFbVar.yoffset);
             Resize(mFbVar.xres, mFbVar.yres);
-            LOG("Render()");
             Render();
         }
     }
