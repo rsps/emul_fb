@@ -84,11 +84,9 @@ void ViewBase::run()
 
     Epoll ep;
     ep.Add(mViewFd, EPOLLIN);
+    int counts = 1;
 
     while (PollEvents()) {
-
-        int counts = ep.Wait(events, cMAX_EVENTS, 10);
-
         if (counts > 0) {
             size_t bytes = read(mViewFd, &mFbVar, sizeof(mFbVar));
             if (bytes == -1) {
@@ -98,5 +96,6 @@ void ViewBase::run()
             Resize(mFbVar.xres, mFbVar.yres);
             Render();
         }
+        counts = ep.Wait(events, cMAX_EVENTS, 10);
     }
 }
