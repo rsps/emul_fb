@@ -1,13 +1,26 @@
 /*
  *  vfb2.c -- Virtual frame buffer device with pollable output.
  *
- *  Based on linux/drivers/video/vfb.c -- Virtual frame buffer device
+ *  Extended version of linux/drivers/video/vfb.c -- Virtual frame buffer device
  *
- *      Copyright (C) 2021 Steffen Brummer
+ *      Copyright (C) 2021 RSP Systems <software@rspsystems.com>
  *
  *  This file is subject to the terms and conditions of the GNU General Public
  *  License. See the file COPYING in the main directory of this archive for
  *  more details.
+ *
+ */
+
+/**
+ *  This driver adds an extra character device /dev/fb_view which can be polled by
+ *  a user application to get notified whenever panning is performed.
+ *  Reading from the file always returns the content of struct fb_var_screeninfo,
+ *  which contains the yoffset parameter used to control double buffering.
+ *
+ *  The emul_fb application is designed to show the content from this frame buffer
+ *  in a native desktop window. This way it is possible to test gui frameworks
+ *  utilizing a Linux frame buffer, still used in many embedded devices, from a
+ *  standard desktop.
  */
 
 #include <linux/module.h>
@@ -582,7 +595,6 @@ static int vfb_probe(struct platform_device *dev)
         dev_err(&dev->dev, "Failed to register device class\n");
         return PTR_ERR(viewClass);
     }
-//    viewClass->dev_groups = attr_groups;
 
     viewDevice = device_create(viewClass, &dev->dev, MKDEV(majorNumber, 0), dev, DEVICE_NAME);
     if (IS_ERR(viewDevice)) {

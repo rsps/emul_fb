@@ -23,7 +23,14 @@
 #include <string>
 #include "ViewBase.h"
 
-
+/**
+ * \class FramebufferViewSDL
+ * \brief Viewer implementation utilizing the SDL2 framework.
+ *        Frame buffer content is copied directly into a
+ *        SDL_Texture element, and then rendered in the top
+ *        window.
+ *
+ */
 class FramebufferViewSDL : public ViewBase
 {
 public:

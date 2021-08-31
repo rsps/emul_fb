@@ -22,6 +22,11 @@
 
 #include <sys/epoll.h>
 
+/**
+ * \class Epoll
+ * \brief C++ class wrapping epoll functionality.
+ *
+ */
 class Epoll
 {
 public:

@@ -92,11 +92,6 @@ void FramebufferViewSDL::Resize(int aWidth, int aHeight)
     mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, aWidth, aHeight);
 }
 
-/**
- * Function to check for pending events.
- *
- * \return false if termination is requested.
- */
 bool FramebufferViewSDL::PollEvents()
 {
     SDL_Event event;

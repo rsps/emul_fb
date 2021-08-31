@@ -26,13 +26,12 @@ if(NOT libSDL2pp_POPULATED)
 endif()
 
 
-#set(LIBFUSE "fuse3")
-
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(SDL2 REQUIRED)
 
-INCLUDE_DIRECTORIES(${SDL2PP_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${SDL2PP_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} /usr/include/c++/9/)
+unset(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES)
 
 add_executable(emul_fb emul_fb.cpp Epoll.cpp FramebufferViewSDL.cpp ViewBase.cpp)
 

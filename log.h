@@ -22,11 +22,19 @@
 
 #include <iostream>
 
+/**
+ * \fn void LOG(Args&&...)
+ * \brief Template function to aid in output logging.
+ *
+ * \tparam Args
+ * \param args
+ */
 template< typename ...Args >
 void LOG(Args &&...args)
 {
+//#ifdef DEBUG
     (std::cerr << ... << args) << std::endl;
+//#endif
 }
-
 
 #endif /* LOG_H_ */
