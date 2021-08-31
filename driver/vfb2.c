@@ -496,7 +496,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
     if (len > sizeof(struct fb_var_screeninfo)) {
         return -ENOBUFS;
     }
-
+/*
     if (panned == 0) {
         if (filep->f_flags & O_NONBLOCK) {
             return -EAGAIN;
@@ -509,6 +509,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
         }
         msleep(10);
     }
+*/
     panned = 0;
 
     result = min((int)len, (int)sizeof(struct fb_var_screeninfo));
