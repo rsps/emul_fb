@@ -20,7 +20,7 @@ add_compile_options(
     -D__KERNEL__
     -DMODULE
     )
-add_library(${PROJECT_NAME} STATIC vfb2.c)
+#add_library(${PROJECT_NAME} STATIC vfb2.c)
 
 
 # Generate Kbuild file in build directory
@@ -29,7 +29,7 @@ configure_file(Kbuild.in Kbuild @ONLY)
 
 
 set(DRIVER_FILE ${PROJECT_NAME}.ko)
-set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR} src=${CMAKE_CURRENT_SOURCE_DIR})
+set(KBUILD_CMD ${CMAKE_MAKE_PROGRAM} -C ${KERNELHEADERS_DIR} modules M=${CMAKE_CURRENT_BINARY_DIR} src=${CMAKE_CURRENT_SOURCE_DIR} VERBOSE=1)
 
 add_custom_command(OUTPUT ${DRIVER_FILE}
     COMMAND ${KBUILD_CMD}
