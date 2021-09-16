@@ -25,7 +25,7 @@
 
 int main(int argc, char **argv)
 {
-    std::cout << "Framebuffer Emulator ver. 0.2.0" << std::endl;
+    std::cout << "Framebuffer Emulator ver. 0.3.0" << std::endl;
 
     try {
         FramebufferViewSDL view("/dev/fb1", "/dev/fb_view");

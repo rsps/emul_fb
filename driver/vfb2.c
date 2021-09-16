@@ -115,6 +115,7 @@ static struct device* viewDevice = NULL;
 static DECLARE_WAIT_QUEUE_HEAD(pan_wait);
 static int panned = 0;
 static struct fb_var_screeninfo *fb_var_info;
+static struct mutex view_mutex;
 
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
@@ -416,6 +417,9 @@ static int vfb_pan_display(struct fb_var_screeninfo *var,
             var->yoffset + info->var.yres > info->var.yres_virtual)
             return -EINVAL;
     }
+
+    mutex_lock(&view_mutex);
+
     info->var.xoffset = var->xoffset;
     info->var.yoffset = var->yoffset;
     if (var->vmode & FB_VMODE_YWRAP)
@@ -423,10 +427,14 @@ static int vfb_pan_display(struct fb_var_screeninfo *var,
     else
         info->var.vmode &= ~FB_VMODE_YWRAP;
 
-    pr_info("Display panned. yoffset: %d, %p==%p", info->var.yoffset, &info->var, fb_var_info);
+    pr_info("Display panned. yoffset: %d, %d", info->var.yoffset, (var->vmode & FB_VMODE_YWRAP));
 
     panned = 1;
+
     wake_up_interruptible(&pan_wait);
+
+    mutex_unlock(&view_mutex);
+    usleep_range(500, 1000);
 
     return 0;
 }
@@ -452,7 +460,9 @@ static int dev_open(struct inode *inodep, struct file *filep)
 
     pr_info("dev_open enter\n");
 
+    mutex_lock(&view_mutex);
     panned = 0;
+    mutex_unlock(&view_mutex);
 
     return err;
 }
@@ -463,7 +473,9 @@ static int dev_release(struct inode *inodep, struct file *filep)
 
     pr_info("dev_release enter\n");
 
+    mutex_lock(&view_mutex);
     panned = -1;
+    mutex_unlock(&view_mutex);
 
     return err;
 }
@@ -476,9 +488,13 @@ static unsigned int dev_poll(struct file *filep, poll_table *wait)
 
     poll_wait(filep, &pan_wait, wait);
 
+    mutex_lock(&view_mutex);
+
     if (panned == 1) {
         ret = POLLIN | POLLRDNORM;
     }
+
+    mutex_unlock(&view_mutex);
 
     pr_info("dev_poll exit. return(%u)\n", ret);
 
@@ -510,6 +526,8 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
         msleep(10);
     }
 */
+    mutex_lock(&view_mutex);
+
     panned = 0;
 
     result = min((int)len, (int)sizeof(struct fb_var_screeninfo));
@@ -522,11 +540,14 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     /* copy_to_user returns number of bytes that could NOT be copied: 0 = success. */
     if(0 != remaining) {
+        mutex_unlock(&view_mutex);
         pr_err("copy_to_user failed. Remaining=(%d)\n", remaining);
         return -ENOBUFS;
     }
 
     *offset += result;
+
+    mutex_unlock(&view_mutex);
 
     pr_info("dev_read exit. Return(%u)\n", result );
 
@@ -607,6 +628,8 @@ static int vfb_probe(struct platform_device *dev)
 
     fb_var_info = &info->var;
 
+    mutex_init(&view_mutex);
+
     return 0;
 err2:
     fb_dealloc_cmap(&info->cmap);
@@ -680,5 +703,6 @@ static void __exit vfb_exit(void)
 module_exit(vfb_exit);
 
 MODULE_LICENSE("GPL");
+MODULE_VERSION("0.1.0");
 #endif              /* MODULE */
 

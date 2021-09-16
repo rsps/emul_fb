@@ -41,7 +41,7 @@ FramebufferViewSDL::FramebufferViewSDL(const std::string aFrameBufferName, const
     mpRenderer->SetDrawBlendMode(SDL_BLENDMODE_BLEND);
 
     mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 480, 800);
-    mpTexture->SetBlendMode(SDL_BLENDMODE_BLEND);
+//    mpTexture->SetBlendMode(SDL_BLENDMODE_BLEND);
 }
 
 FramebufferViewSDL::~FramebufferViewSDL()
@@ -92,6 +92,7 @@ void FramebufferViewSDL::Resize(int aWidth, int aHeight)
     mpWindow->SetSize(aWidth, aHeight);
     delete mpTexture;
     mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, aWidth, aHeight);
+//    mpTexture->SetBlendMode(SDL_BLENDMODE_BLEND);
 }
 
 bool FramebufferViewSDL::PollEvents()

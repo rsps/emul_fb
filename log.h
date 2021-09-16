@@ -29,12 +29,14 @@
  * \tparam Args
  * \param args
  */
+#ifdef DEBUG
 template< typename ...Args >
 void LOG(Args &&...args)
 {
-//#ifdef DEBUG
     (std::cerr << ... << args) << std::endl;
-//#endif
 }
+#else
+    #define LOG(...)
+#endif
 
 #endif /* LOG_H_ */
