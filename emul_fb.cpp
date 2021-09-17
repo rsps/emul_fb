@@ -25,10 +25,15 @@
 
 int main(int argc, char **argv)
 {
-    std::cout << "Framebuffer Emulator ver. 0.3.0" << std::endl;
+    std::cout << "Framebuffer Emulator ver. 0.3.0 " << argc << std::endl;
 
     try {
-        FramebufferViewSDL view("/dev/fb1", "/dev/fb_view");
+        std::string fb = "/dev/fb1";
+        if (argc > 1) {
+            fb = argv[1];
+        }
+
+        FramebufferViewSDL view(fb, "/dev/fb_view");
 
         view.run();
     }
