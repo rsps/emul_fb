@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Framebuffer Emulator
+Comment=Virtual Framebuffer Viewer
+Exec=/usr/local/bin/emul_fb
+Icon=/usr/share/icons/gnome/256x256/apps/preferences-desktop-screensaver.png
+StartupNotify=true
+Terminal=false
+Type=Application
+Categories=Development;Graphics;
