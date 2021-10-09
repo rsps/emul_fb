@@ -34,7 +34,7 @@ FramebufferViewSDL::FramebufferViewSDL(const std::string aFrameBufferName, const
     mpWindow = new Window("Framebuffer Emulator",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             480, 800,
-            SDL_WINDOW_SKIP_TASKBAR);
+            SDL_WINDOW_SHOWN | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_MOUSE_CAPTURE);
 
     // Create accelerated video renderer with default driver
     mpRenderer = new Renderer(*mpWindow, -1, SDL_RENDERER_ACCELERATED);
@@ -71,7 +71,7 @@ void FramebufferViewSDL::Render()
             long location;
             for (uint32_t x = 0 ; x < mFbVar.xres ; x++) {
                 location = ((x + mFbVar.xoffset) * (mFbVar.bits_per_pixel / 8)) + ((y + mFbVar.yoffset) * mFbFix.line_length);
-                pixels[x + (y * mFbVar.xres)] = *((uint32_t*) (mpBuffer + location));
+                pixels[x + (y * mFbVar.xres)] = *(reinterpret_cast<uint32_t*>(mpBuffer + location));
             }
 //            LOG("y: ", y, ", location: ", location);
         }

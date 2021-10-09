@@ -19,16 +19,21 @@
 
 #include <iostream>
 #include <exception>
-
+#include <string>
+#include <filesystem>
 #include "FramebufferViewSDL.h"
+
+namespace fs = std::filesystem;
+
+static std::string locateFramebufferDevice();
 
 
 int main(int argc, char **argv)
 {
-    std::cout << "Framebuffer Emulator ver. 0.3.0 " << argc << std::endl;
+    std::clog << "Framebuffer Emulator ver. 0.4.0 " << argc << std::endl;
 
     try {
-        std::string fb = "/dev/fb1";
+        std::string fb = locateFramebufferDevice();
         if (argc > 1) {
             fb = argv[1];
         }
@@ -41,6 +46,17 @@ int main(int argc, char **argv)
         std::cerr << "Exception: " << e.what() << std::endl;
     }
 
-    std::cout << "Done" << std::endl;
+    std::clog << "Done" << std::endl;
     return 0;
+}
+
+static std::string locateFramebufferDevice()
+{
+    fs::path p = "/sys/devices/platform/vfb2.0/graphics/";
+
+    if (fs::exists(p)) {
+        for(auto const& dir_entry: fs::directory_iterator{p})
+            return "/dev/" + dir_entry.path().stem().string();
+    }
+    throw std::runtime_error("Could not locate vfb2 device. Please make sure the vfb2 driver is loaded.");
 }

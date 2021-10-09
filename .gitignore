@@ -13,3 +13,4 @@ _deps
 /ext-libs/
 .cproject
 .project
+/.settings/
