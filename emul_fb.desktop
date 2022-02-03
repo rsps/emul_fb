@@ -2,7 +2,7 @@
 Name=Framebuffer Emulator
 Comment=Virtual Framebuffer Viewer
 Exec=/usr/local/bin/emul_fb
-Icon=/usr/share/icons/gnome/256x256/apps/preferences-desktop-screensaver.png
+Icon=/usr/share/icons/emul_fb.png
 StartupNotify=true
 Terminal=false
 Type=Application
