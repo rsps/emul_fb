@@ -5,15 +5,27 @@ execute_process(
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Find Kernel Config
+find_path(KERNELCONFIG_DIR
+        include/config/auto.conf
+        PATHS
+            /lib/modules/${KERNEL_RELEASE}/build/
+            /lib/modules/${KERNEL_RELEASE}/source/
+        )
+
+
 # Find the headers
 find_path(KERNELHEADERS_DIR
         include/linux/user.h
         PATHS
             /lib/modules/${KERNEL_RELEASE}/build/
+            /lib/modules/${KERNEL_RELEASE}/source/
         )
 
 message(STATUS "Kernel release: ${KERNEL_RELEASE}")
 message(STATUS "Kernel headers: ${KERNELHEADERS_DIR}")
+message(STATUS "Kernel conf: ${KERNELCONFIG_DIR}")
+
 
 if (KERNELHEADERS_DIR)
     set(KERNELHEADERS_INCLUDE_DIRS
