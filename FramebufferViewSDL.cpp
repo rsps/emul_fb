@@ -38,7 +38,7 @@ FramebufferViewSDL::FramebufferViewSDL(const std::string aFrameBufferName, const
 
     // Create accelerated video renderer with default driver
     mpRenderer = new Renderer(*mpWindow, -1, SDL_RENDERER_ACCELERATED);
-    mpRenderer->SetDrawBlendMode(SDL_BLENDMODE_BLEND);
+    mpRenderer->SetDrawBlendMode(SDL_BLENDMODE_NONE);
 
     mpTexture = new Texture(*mpRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 480, 800);
 //    mpTexture->SetBlendMode(SDL_BLENDMODE_BLEND);
@@ -71,7 +71,7 @@ void FramebufferViewSDL::Render()
             long location;
             for (uint32_t x = 0 ; x < mFbVar.xres ; x++) {
                 location = ((x + mFbVar.xoffset) * (mFbVar.bits_per_pixel / 8)) + ((y + mFbVar.yoffset) * mFbFix.line_length);
-                pixels[x + (y * mFbVar.xres)] = *(reinterpret_cast<uint32_t*>(mpBuffer + location));
+                pixels[x + (y * mFbVar.xres)] = *(mpBuffer + (location / 4));
             }
 //            LOG("y: ", y, ", location: ", location);
         }

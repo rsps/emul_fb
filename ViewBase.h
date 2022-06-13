@@ -79,7 +79,7 @@ protected:
     int mViewFd;
     int mFrameBufFd;
 
-    uint8_t* mpBuffer = nullptr;
+    uint32_t* mpBuffer = nullptr;
 
     struct fb_fix_screeninfo mFbFix;
     struct fb_var_screeninfo mFbVar;

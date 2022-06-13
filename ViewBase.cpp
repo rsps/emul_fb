@@ -63,7 +63,7 @@ ViewBase::ViewBase(const std::string aFrameBufferName, const std::string aViewDe
         throw std::system_error(errno, std::generic_category(), "Failed to mmap frame buffer");
     }
 
-    mpBuffer = static_cast<uint8_t*>(p);
+    mpBuffer = static_cast<uint32_t*>(p);
 }
 
 ViewBase::~ViewBase()
