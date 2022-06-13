@@ -450,7 +450,7 @@ static int vfb_mmap(struct fb_info *info,
 }
 
 /* **********************************************************************
- * Device handlers for /dev/spectrometer
+ * Device handlers for /dev/fb_view
  * **********************************************************************
  */
 
