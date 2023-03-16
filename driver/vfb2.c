@@ -42,6 +42,10 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 
+/*#define PRINT(a, ...) pr_info(a, ##__VA_ARGS__)
+ */
+#define PRINT(a, ...)
+
     /*
      *  RAM we reserve for the frame buffer. This defines the maximum screen
      *  size
@@ -427,7 +431,7 @@ static int vfb_pan_display(struct fb_var_screeninfo *var,
     else
         info->var.vmode &= ~FB_VMODE_YWRAP;
 
-    pr_info("Display panned. yoffset: %d, %d", info->var.yoffset, (var->vmode & FB_VMODE_YWRAP));
+    PRINT("Display panned. yoffset: %d, %d", info->var.yoffset, (var->vmode & FB_VMODE_YWRAP));
 
     panned = 1;
 
@@ -458,7 +462,7 @@ static int dev_open(struct inode *inodep, struct file *filep)
 {
     int err = 0;
 
-    pr_info("dev_open enter\n");
+    PRINT("dev_open enter\n");
 
     mutex_lock(&view_mutex);
     panned = 0;
@@ -471,7 +475,7 @@ static int dev_release(struct inode *inodep, struct file *filep)
 {
     int err = 0;
 
-    pr_info("dev_release enter\n");
+    PRINT("dev_release enter\n");
 
     mutex_lock(&view_mutex);
     panned = -1;
@@ -484,7 +488,7 @@ static unsigned int dev_poll(struct file *filep, poll_table *wait)
 {
     unsigned int ret = 0;
 
-    pr_info("dev_poll enter\n");
+    PRINT("dev_poll enter\n");
 
     poll_wait(filep, &pan_wait, wait);
 
@@ -496,7 +500,7 @@ static unsigned int dev_poll(struct file *filep, poll_table *wait)
 
     mutex_unlock(&view_mutex);
 
-    pr_info("dev_poll exit. return(%u)\n", ret);
+    PRINT("dev_poll exit. return(%u)\n", ret);
 
     return ret;
 }
@@ -507,7 +511,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
     int remaining;
     u32 result;
 
-    pr_info("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset);
+    PRINT("dev_read enter. len(%u) offset(%u)\n", (u32)len, (u32)*offset);
 
     if (len > sizeof(struct fb_var_screeninfo)) {
         return -ENOBUFS;
@@ -532,9 +536,8 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     result = min((int)len, (int)sizeof(struct fb_var_screeninfo));
 
-    pr_info("dev_read: Copying %u bytes of data\n", result);
-
-    pr_info("dev_read. yoffset: %d", fb_var_info->yoffset);
+    PRINT("dev_read: Copying %u bytes of data\n", result);
+    PRINT("dev_read. yoffset: %d", fb_var_info->yoffset);
 
     remaining = copy_to_user(buffer, fb_var_info, result);
 
@@ -549,7 +552,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
     mutex_unlock(&view_mutex);
 
-    pr_info("dev_read exit. Return(%u)\n", result );
+    PRINT("dev_read exit. Return(%u)\n", result );
 
     return result;
 }
