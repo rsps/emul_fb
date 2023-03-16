@@ -49,12 +49,12 @@
      *  The default can be overridden if the driver is compiled as a module
      */
 
-#define VIDEOMEMSIZE    (480*800*4*2)   /* 3 MB */
+#define VIDEOMEMSIZE    (16 * 1024 * 1024)   /* 16 MB */
 
 static void *videomemory;
 static u_long videomemorysize = VIDEOMEMSIZE;
 module_param(videomemorysize, ulong, 0);
-MODULE_PARM_DESC(videomemorysize, "RAM available to frame buffer (in bytes)");
+MODULE_PARM_DESC(videomemorysize, " RAM available to frame buffer (in bytes). Defaults to 16MB");
 
 static char *mode_option = NULL;
 module_param(mode_option, charp, 0);
@@ -567,12 +567,16 @@ static int vfb_probe(struct platform_device *dev)
     /*
      * For real video cards we use ioremap.
      */
-    if (!(videomemory = vmalloc_32_user(size)))
+    if (!(videomemory = vmalloc_32_user(size))) {
+        fb_err(info, "Unable to allocate video memory.\n");
         return retval;
+    }
 
     info = framebuffer_alloc(sizeof(u32) * 256, &dev->dev);
-    if (!info)
+    if (!info) {
+        fb_err(info, "Unable to allocate framebuffer.\n");
         goto err;
+    }
 
     info->screen_base = (char __iomem *)videomemory;
     info->fbops = (struct fb_ops*)&vfb_ops;
@@ -592,12 +596,16 @@ static int vfb_probe(struct platform_device *dev)
     info->flags = FBINFO_FLAG_DEFAULT;
 
     retval = fb_alloc_cmap(&info->cmap, 256, 0);
-    if (retval < 0)
+    if (retval < 0) {
+        fb_err(info, "Unable to allocate cmap.\n");
         goto err1;
+    }
 
     retval = register_framebuffer(info);
-    if (retval < 0)
+    if (retval < 0) {
+        fb_err(info, "Unable to register framebuffer.\n");
         goto err2;
+    }
     platform_set_drvdata(dev, info);
 
     vfb_set_par(info);
