@@ -41,6 +41,7 @@
 #include <linux/wait.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
+#include <linux/version.h>
 
 /*#define PRINT(a, ...) pr_info(a, ##__VA_ARGS__)
  */
@@ -622,7 +623,11 @@ static int vfb_probe(struct platform_device *dev)
         return majorNumber;
     }
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,0,0)
     viewClass = class_create(THIS_MODULE, DEVICE_NAME);
+#else
+    viewClass = class_create(DEVICE_NAME);
+#endif
     if (IS_ERR(viewClass)) {
         unregister_chrdev(majorNumber, DEVICE_NAME);
         dev_err(&dev->dev, "Failed to register device class\n");
