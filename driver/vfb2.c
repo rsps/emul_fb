@@ -568,7 +568,8 @@ static int vfb_probe(struct platform_device *dev)
     info->fix = vfb_fix;
     info->pseudo_palette = info->par;
     info->par = NULL;
-    info->flags = FBINFO_FLAG_DEFAULT;
+	info->flags = FBINFO_VIRTFB;
+    //info->flags = FBINFO_FLAG_DEFAULT;
 
     retval = fb_alloc_cmap(&info->cmap, 256, 0);
     if (retval < 0)
@@ -590,7 +591,7 @@ static int vfb_probe(struct platform_device *dev)
         return majorNumber;
     }
 
-    viewClass = class_create(THIS_MODULE, DEVICE_NAME);
+    viewClass = class_create(DEVICE_NAME);
     if (IS_ERR(viewClass)) {
         unregister_chrdev(majorNumber, DEVICE_NAME);
         dev_err(&dev->dev, "Failed to register device class\n");
