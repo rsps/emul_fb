@@ -602,6 +602,7 @@ static int vfb_probe(struct platform_device *dev)
 #else
     info->flags = FBINFO_VIRTFB;
 #endif
+
     retval = fb_alloc_cmap(&info->cmap, 256, 0);
     if (retval < 0) {
         fb_err(info, "Unable to allocate cmap.\n");
