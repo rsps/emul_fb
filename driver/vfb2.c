@@ -597,8 +597,11 @@ static int vfb_probe(struct platform_device *dev)
     info->fix = vfb_fix;
     info->pseudo_palette = info->par;
     info->par = NULL;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0)
     info->flags = FBINFO_FLAG_DEFAULT;
-
+#else
+    info->flags = FBINFO_VIRTFB;
+#endif
     retval = fb_alloc_cmap(&info->cmap, 256, 0);
     if (retval < 0) {
         fb_err(info, "Unable to allocate cmap.\n");
@@ -623,7 +626,7 @@ static int vfb_probe(struct platform_device *dev)
         return majorNumber;
     }
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,0,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,3,0)
     viewClass = class_create(THIS_MODULE, DEVICE_NAME);
 #else
     viewClass = class_create(DEVICE_NAME);
