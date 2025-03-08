@@ -618,7 +618,7 @@ err:
     return retval;
 }
 
-static int vfb_remove(struct platform_device *dev)
+static void vfb_remove(struct platform_device *dev)
 {
     struct fb_info *info = platform_get_drvdata(dev);
 
@@ -633,7 +633,7 @@ static int vfb_remove(struct platform_device *dev)
         class_destroy(viewClass);
         unregister_chrdev(majorNumber, DEVICE_NAME);
     }
-    return 0;
+    return;
 }
 
 static struct platform_driver vfb_driver = {
@@ -682,4 +682,3 @@ module_exit(vfb_exit);
 
 MODULE_LICENSE("GPL");
 #endif              /* MODULE */
-
