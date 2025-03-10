@@ -660,7 +660,11 @@ err:
     return retval;
 }
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,10,0)
+static int vfb_remove(struct platform_device *dev)
+#else
 static void vfb_remove(struct platform_device *dev)
+#endif
 {
     struct fb_info *info = platform_get_drvdata(dev);
 
@@ -675,7 +679,11 @@ static void vfb_remove(struct platform_device *dev)
         class_destroy(viewClass);
         unregister_chrdev(majorNumber, DEVICE_NAME);
     }
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,10,0)
+    return 0;
+#else
     return;
+#endif
 }
 
 static struct platform_driver vfb_driver = {
